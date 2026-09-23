@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,11 +45,13 @@ public class User {
     String avatarUrl;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "occupation", nullable = false)
     @Builder.Default
     UserOccupation occupation = UserOccupation.OTHER;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "system_role", nullable = false)
     @Builder.Default
     UserSystemRole systemRole = UserSystemRole.USER;
@@ -62,11 +66,13 @@ public class User {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    Instant createdAt;
+    @Builder.Default
+    Instant createdAt = Instant.now();
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    Instant updatedAt;
+    @Builder.Default
+    Instant updatedAt = Instant.now();
 
     // Relationships
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

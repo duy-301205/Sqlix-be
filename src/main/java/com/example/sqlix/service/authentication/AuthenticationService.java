@@ -57,7 +57,7 @@ public class AuthenticationService {
                 .build();
 
         // 5. Lưu database
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         // 6. Response
         return RegisterResponse.builder()

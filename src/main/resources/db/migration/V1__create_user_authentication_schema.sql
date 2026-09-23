@@ -1,9 +1,9 @@
 -- Kích hoạt extension hỗ trợ sinh UUID ngẫu nhiên
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TYPE user_occupation AS ENUM ('student', 'professional', 'other');
-CREATE TYPE user_system_role AS ENUM ('user', 'instructor', 'admin');
-CREATE TYPE oauth_provider AS ENUM ('google', 'github');
+CREATE TYPE user_occupation AS ENUM ('STUDENT', 'PROFESSIONAL', 'OTHER');
+CREATE TYPE user_system_role AS ENUM ('USER', 'INSTRUCTOR', 'ADMIN');
+CREATE TYPE oauth_provider AS ENUM ('GOOGLE', 'GITHUB');
 
 CREATE TABLE users (
                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12,8 +12,8 @@ CREATE TABLE users (
                        password_hash VARCHAR(255) NULL, -- NULL nếu chỉ đăng nhập bằng Google/GitHub
                        full_name VARCHAR(100) NOT NULL,
                        avatar_url TEXT NULL,
-                       occupation user_occupation NOT NULL DEFAULT 'other',
-                       system_role user_system_role NOT NULL DEFAULT 'user',
+                       occupation user_occupation NOT NULL DEFAULT 'OTHER',
+                       system_role user_system_role NOT NULL DEFAULT 'USER',
                        terms_accepted BOOLEAN NOT NULL DEFAULT FALSE,
                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -84,7 +84,7 @@ CREATE TABLE password_reset_tokens (
                                        token_hash VARCHAR(255) NOT NULL UNIQUE,
                                        expires_at TIMESTAMPTZ NOT NULL,
                                        used_at TIMESTAMPTZ NULL,
-                                       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_pwd_reset_tokens_hash ON password_reset_tokens(token_hash);
