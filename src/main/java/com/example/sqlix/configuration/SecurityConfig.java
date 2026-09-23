@@ -10,6 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -29,7 +30,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) throws Exception {
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
 
         http
                 // REST API sử dụng JWT nên không cần CSRF
@@ -57,8 +59,14 @@ public class SecurityConfig {
                 .exceptionHandling(exception ->
                 exception.authenticationEntryPoint(
                         jwtAuthenticationEntryPoint
+                        )
                 )
-        );
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
 
         return http.build();
     }
