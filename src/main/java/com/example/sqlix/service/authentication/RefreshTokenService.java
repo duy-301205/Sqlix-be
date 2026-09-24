@@ -59,7 +59,6 @@ public class RefreshTokenService {
         if (!Boolean.TRUE.equals(refreshToken.getUser().getIsActive())) {
             throw new AppException(ErrorCode.ACCOUNT_LOCKED);
         }
-
         return refreshToken;
     }
 
@@ -79,6 +78,22 @@ public class RefreshTokenService {
 
             refreshTokenRepository.save(refreshToken);
         }
+    }
+
+    @Transactional
+    public String rotateRefreshToken(
+            RefreshToken oldRefreshToken,
+            String userAgent,
+            String ipAddress
+    ) {
+        oldRefreshToken.setRevokedAt(Instant.now());
+        refreshTokenRepository.save(oldRefreshToken);
+
+        return createRefreshToken(
+                oldRefreshToken.getUser(),
+                userAgent,
+                ipAddress
+        );
     }
 
     @Transactional

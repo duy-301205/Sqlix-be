@@ -1,9 +1,12 @@
 package com.example.sqlix.service.authentication;
 
 import com.example.sqlix.dto.request.LoginRequest;
+import com.example.sqlix.dto.request.RefreshTokenRequest;
 import com.example.sqlix.dto.request.RegisterRequest;
 import com.example.sqlix.dto.response.LoginResponse;
+import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
+import com.example.sqlix.entity.RefreshToken;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.UserSystemRole;
 import com.example.sqlix.exception.AppException;
@@ -110,6 +113,35 @@ public class AuthenticationService {
                 .userId(user.getId())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .build();
+    }
+
+    @Transactional
+    public RefreshTokenResponse refreshToken(
+            RefreshTokenRequest request,
+            String userAgent,
+            String ipAddress
+    ) {
+        RefreshToken oldRefreshToken =
+                refreshTokenService.verifyRefreshToken(
+                        request.getRefreshToken()
+                );
+
+        User user = oldRefreshToken.getUser();
+
+        String newAccessToken =
+                jwtService.generateAccessToken(user);
+
+        String newRefreshToken =
+                refreshTokenService.rotateRefreshToken(
+                        oldRefreshToken,
+                        userAgent,
+                        ipAddress
+                );
+
+        return RefreshTokenResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .build();
     }
 }

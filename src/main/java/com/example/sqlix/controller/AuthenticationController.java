@@ -1,9 +1,11 @@
 package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.request.LoginRequest;
+import com.example.sqlix.dto.request.RefreshTokenRequest;
 import com.example.sqlix.dto.request.RegisterRequest;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.LoginResponse;
+import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
 import com.example.sqlix.service.authentication.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +49,29 @@ public class AuthenticationController {
                 .message("Login successfully")
                 .code(200)
                 .result(authenticationService.login(request,userAgent, ipAddress))
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<RefreshTokenResponse> refreshToken(
+            @RequestBody @Valid RefreshTokenRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        String userAgent =
+                httpRequest.getHeader("User-Agent");
+
+        String ipAddress =
+                httpRequest.getRemoteAddr();
+
+        RefreshTokenResponse result =
+                authenticationService.refreshToken(
+                        request,
+                        userAgent,
+                        ipAddress
+                );
+
+        return ApiResponse.<RefreshTokenResponse>builder()
+                .result(result)
                 .build();
     }
 }
