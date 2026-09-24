@@ -14,4 +14,5 @@ import java.util.UUID;
 public class LoginResponse {
     UUID userId;
     String accessToken;
+    String refreshToken;
 }

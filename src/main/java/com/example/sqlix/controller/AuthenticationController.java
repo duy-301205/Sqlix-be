@@ -6,6 +6,7 @@ import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.LoginResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
 import com.example.sqlix.service.authentication.AuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,13 +35,18 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(
-            @Valid @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest
     ) {
+
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        String ipAddress = httpRequest.getRemoteAddr();
 
         return ApiResponse.<LoginResponse>builder()
                 .message("Login successfully")
                 .code(200)
-                .result(authenticationService.login(request))
+                .result(authenticationService.login(request,userAgent, ipAddress))
                 .build();
     }
 }

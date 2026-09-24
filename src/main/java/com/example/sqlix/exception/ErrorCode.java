@@ -90,7 +90,11 @@ public enum ErrorCode {
     TOKEN_INVALID(9002, "Mã phiên đăng nhập (Token) không hợp lệ hoặc đã hết hạn.", HttpStatus.UNAUTHORIZED),
     REFRESH_TOKEN_IS_MISSING(9003, "Thiếu Refresh Token trong yêu cầu.", HttpStatus.BAD_REQUEST),
     INTERNAL_SERVER_ERROR(9004, "Lỗi hệ thống nội bộ, vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_KEY(9005, "Mã lỗi không xác định.", HttpStatus.BAD_REQUEST);
+    INVALID_KEY(9005, "Mã lỗi không xác định.", HttpStatus.BAD_REQUEST),
+    INVALID_REFRESH_TOKEN(9006, "Refresh Token không hợp lệ hoặc đã hết hạn.", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_EXPIRED(9007, "Refresh Token đã hết hạn, vui lòng đăng nhập lại.", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_REVOKED(9008, "Refresh Token đã bị thu hồi (đã đăng xuất hoặc đổi mật khẩu).", HttpStatus.UNAUTHORIZED);
+
 
     private int code;
     private String message;

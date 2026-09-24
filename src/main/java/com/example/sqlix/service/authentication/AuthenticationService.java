@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -71,7 +72,9 @@ public class AuthenticationService {
                 .build();
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request,
+                               String userAgent,
+                               String ipAddress) {
 
         // Có thể login bằng username hoặc email
         User user = userRepository
@@ -100,9 +103,13 @@ public class AuthenticationService {
         String accessToken =
                 jwtService.generateAccessToken(user);
 
+        String refreshToken = refreshTokenService.createRefreshToken(
+                user, userAgent,ipAddress);
+
         return LoginResponse.builder()
                 .userId(user.getId())
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 }
