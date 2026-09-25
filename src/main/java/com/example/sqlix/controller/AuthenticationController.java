@@ -1,6 +1,7 @@
 package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.request.LoginRequest;
+import com.example.sqlix.dto.request.LogoutRequest;
 import com.example.sqlix.dto.request.RefreshTokenRequest;
 import com.example.sqlix.dto.request.RegisterRequest;
 import com.example.sqlix.dto.response.ApiResponse;
@@ -11,6 +12,7 @@ import com.example.sqlix.service.authentication.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -71,7 +73,34 @@ public class AuthenticationController {
                 );
 
         return ApiResponse.<RefreshTokenResponse>builder()
+                .code(200)
                 .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestBody @Valid LogoutRequest request,
+                                    Authentication authentication) {
+        authenticationService.logout(request, authentication.getName());
+
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Logout successful")
+                .build();
+    }
+
+    @PostMapping("/logout-all")
+    public ApiResponse<Void> logoutAll(
+            Authentication authentication
+    ) {
+
+        authenticationService.logoutAll(
+                authentication.getName()
+        );
+
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Logout from all devices successful")
                 .build();
     }
 }

@@ -1,6 +1,7 @@
 package com.example.sqlix.service.authentication;
 
 import com.example.sqlix.dto.request.LoginRequest;
+import com.example.sqlix.dto.request.LogoutRequest;
 import com.example.sqlix.dto.request.RefreshTokenRequest;
 import com.example.sqlix.dto.request.RegisterRequest;
 import com.example.sqlix.dto.response.LoginResponse;
@@ -11,6 +12,7 @@ import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.UserSystemRole;
 import com.example.sqlix.exception.AppException;
 import com.example.sqlix.exception.ErrorCode;
+import com.example.sqlix.repository.RefreshTokenRepository;
 import com.example.sqlix.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -143,5 +145,33 @@ public class AuthenticationService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
+    }
+
+    public void logout(LogoutRequest request,
+                       String identifier) {
+        User user = userRepository.findByUsernameOrEmail(
+                identifier, identifier
+        ).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
+        refreshTokenService.revokeToken(request.getRefreshToken(), user.getId());
+    }
+
+    @Transactional
+    public void logoutAll(String identifier) {
+
+        User user = userRepository
+                .findByUsernameOrEmail(
+                        identifier,
+                        identifier
+                )
+                .orElseThrow(
+                        () -> new AppException(
+                                ErrorCode.UNAUTHENTICATED
+                        )
+                );
+
+        refreshTokenService.revokeAllTokens(
+                user.getId()
+        );
     }
 }
