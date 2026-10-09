@@ -1,15 +1,13 @@
 package com.example.sqlix.service.authentication;
 
-import com.example.sqlix.dto.request.LoginRequest;
-import com.example.sqlix.dto.request.LogoutRequest;
-import com.example.sqlix.dto.request.RefreshTokenRequest;
-import com.example.sqlix.dto.request.RegisterRequest;
+import com.example.sqlix.dto.request.*;
 import com.example.sqlix.dto.response.LoginResponse;
 import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
 import com.example.sqlix.entity.RefreshToken;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.UserSystemRole;
+import com.example.sqlix.enums.VerifyResult;
 import com.example.sqlix.exception.AppException;
 import com.example.sqlix.exception.ErrorCode;
 import com.example.sqlix.repository.UserRepository;
@@ -17,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -65,8 +65,7 @@ public class AuthenticationService {
         // 5. Lưu database
         User savedUser = userRepository.saveAndFlush(user);
 
-        String otp = emailVerificationService
-                .sendInitialVerification(savedUser);
+        emailVerificationService.sendInitialVerification(savedUser);
 
         // 6. Response
         return RegisterResponse.builder()
@@ -176,5 +175,49 @@ public class AuthenticationService {
         refreshTokenService.revokeAllTokens(
                 user.getId()
         );
+    }
+
+    public void verifyEmail(VerifyEmailRequest request) {
+
+        VerifyResult result = emailVerificationService.verifyEmail(
+                request.getEmail().trim().toLowerCase(Locale.ROOT),
+                request.getOtp()
+        );
+
+        switch (result) {
+            case SUCCESS -> {
+                return;
+            }
+
+            case INVALID_OTP ->
+                    throw new AppException(ErrorCode.INVALID_OTP);
+
+            case EXPIRED_OTP ->
+                    throw new AppException(ErrorCode.EXPIRED_OTP);
+
+            case TOO_MANY_ATTEMPTS ->
+                    throw new AppException(
+                            ErrorCode.TOO_MANY_OTP_ATTEMPTS
+                    );
+
+            case ALREADY_VERIFIED ->
+                    throw new AppException(
+                            ErrorCode.EMAIL_ALREADY_VERIFIED
+                    );
+
+            case USER_NOT_FOUND ->
+                    throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    public void resendVerification(String identifier) {
+
+        User user = userRepository.findByUsername(identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.USER_NOT_FOUND)
+                );
+
+        emailVerificationService.resendVerification(user.getId());
     }
 }

@@ -24,16 +24,21 @@ public class OtpHashUtils {
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
     }
 
-    public String hash(UUID userId, String purpose, String otp) {
+    public String hash(
+            UUID userId,
+            UUID tokenId,
+            String purpose,
+            String otp
+    ) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
 
             mac.init(new SecretKeySpec(
-                    secret,
-                    "HmacSHA256"
+                    secret, "HmacSHA256"
             ));
 
-            String data = userId + ":" + purpose + ":" + otp;
+            String data = userId + ":" + tokenId
+                    + ":" + purpose + ":" + otp;
 
             byte[] result = mac.doFinal(
                     data.getBytes(StandardCharsets.UTF_8)
@@ -50,15 +55,18 @@ public class OtpHashUtils {
 
     public boolean matches(
             UUID userId,
+            UUID tokenId,
             String purpose,
             String otp,
             String storedHash
     ) {
-        byte[] expected = hash(userId, purpose, otp)
-                .getBytes(StandardCharsets.UTF_8);
+        byte[] expected = hash(
+                userId, tokenId, purpose, otp
+        ).getBytes(StandardCharsets.UTF_8);
 
-        byte[] actual = storedHash
-                .getBytes(StandardCharsets.UTF_8);
+        byte[] actual = storedHash.getBytes(
+                StandardCharsets.UTF_8
+        );
 
         return MessageDigest.isEqual(expected, actual);
     }

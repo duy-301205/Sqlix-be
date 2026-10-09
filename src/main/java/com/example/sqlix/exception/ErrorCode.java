@@ -62,6 +62,13 @@ public enum ErrorCode {
     EXAM_ALREADY_SUBMITTED(1402, "Bài thi đã được nộp trước đó, không thể nộp lại.", HttpStatus.BAD_REQUEST),
     EXAM_NOT_IN_PROGRESS(1403, "Phiên làm bài thi không còn khả dụng.", HttpStatus.BAD_REQUEST),
 
+    INVALID_OTP(1501, "Invalid verification OTP", HttpStatus.BAD_REQUEST),
+    EXPIRED_OTP(1502, "Verification OTP has expired", HttpStatus.BAD_REQUEST),
+    TOO_MANY_OTP_ATTEMPTS(1503, "Too many invalid OTP attempts", HttpStatus.TOO_MANY_REQUESTS),
+    EMAIL_ALREADY_VERIFIED(1504, "Email is already verified", HttpStatus.CONFLICT),
+    OTP_RESEND_TOO_SOON(1505, "Please wait 60 seconds before requesting another OTP", HttpStatus.TOO_MANY_REQUESTS),
+    USER_NOT_FOUND(1506, "User not found", HttpStatus.NOT_FOUND),
+
     // =========================================================================
     // 7000 - 7099: Input Validation
     // Phục vụ: DTO Validation chung

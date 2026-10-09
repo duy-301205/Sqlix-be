@@ -107,37 +107,28 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verify-email")
-    public ApiResponse<String> verifyEmail(
-            @Valid @RequestBody VerifyEmailRequest request
+    public ApiResponse<Void> verifyEmail(
+            @RequestBody @Valid VerifyEmailRequest request
     ) {
-        var result = emailVerificationService.verifyEmail(
-                request.getEmail(),
-                request.getOtp()
-        );
+        authenticationService.verifyEmail(request);
 
-        if (result != VerifyResult.SUCCESS) {
-            throw new IllegalArgumentException(result.name());
-        }
-
-        return ApiResponse.<String>builder()
+        return ApiResponse.<Void>builder()
                 .code(200)
                 .message("Email verified successfully")
                 .build();
     }
 
     @PostMapping("/resend-verification")
-    public ApiResponse<String> resendVerification(
+    public ApiResponse<Void> resendVerification(
             Authentication authentication
     ) {
-        UUID userId = UUID.fromString(authentication.getName());
+        authenticationService.resendVerification(
+                authentication.getName()
+        );
 
-        String otp = emailVerificationService.resendVerification(userId);
-
-        // Gửi email sau khi giao dịch tạo OTP đã commit.
-        // Không đưa otp vào response.
-
-        return ApiResponse.<String>builder()
-                .message("Verification OTP requested successfully")
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Verification OTP sent successfully")
                 .build();
     }
 }
