@@ -35,6 +35,10 @@ public class EmailVerificationToken {
     @Column(name = "used_at")
     Instant usedAt;
 
+    @Builder.Default
+    @Column(name = "attempt_count", nullable = false)
+    private Integer attemptCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     Instant createdAt;

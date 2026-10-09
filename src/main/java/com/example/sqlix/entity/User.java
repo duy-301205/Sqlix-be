@@ -56,6 +56,10 @@ public class User {
     @Builder.Default
     UserSystemRole systemRole = UserSystemRole.USER;
 
+    @Builder.Default
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
     @Column(name = "terms_accepted", nullable = false)
     @Builder.Default
     Boolean termsAccepted = false;

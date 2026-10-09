@@ -12,7 +12,6 @@ import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.UserSystemRole;
 import com.example.sqlix.exception.AppException;
 import com.example.sqlix.exception.ErrorCode;
-import com.example.sqlix.repository.RefreshTokenRepository;
 import com.example.sqlix.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +24,7 @@ public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -64,6 +64,9 @@ public class AuthenticationService {
 
         // 5. Lưu database
         User savedUser = userRepository.saveAndFlush(user);
+
+        String otp = emailVerificationService
+                .sendInitialVerification(savedUser);
 
         // 6. Response
         return RegisterResponse.builder()

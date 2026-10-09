@@ -1,14 +1,13 @@
 package com.example.sqlix.controller;
 
-import com.example.sqlix.dto.request.LoginRequest;
-import com.example.sqlix.dto.request.LogoutRequest;
-import com.example.sqlix.dto.request.RefreshTokenRequest;
-import com.example.sqlix.dto.request.RegisterRequest;
+import com.example.sqlix.dto.request.*;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.LoginResponse;
 import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
+import com.example.sqlix.enums.VerifyResult;
 import com.example.sqlix.service.authentication.AuthenticationService;
+import com.example.sqlix.service.authentication.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
     public ApiResponse<RegisterResponse> register(
@@ -101,6 +103,41 @@ public class AuthenticationController {
         return ApiResponse.<Void>builder()
                 .code(200)
                 .message("Logout from all devices successful")
+                .build();
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<String> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request
+    ) {
+        var result = emailVerificationService.verifyEmail(
+                request.getEmail(),
+                request.getOtp()
+        );
+
+        if (result != VerifyResult.SUCCESS) {
+            throw new IllegalArgumentException(result.name());
+        }
+
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("Email verified successfully")
+                .build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ApiResponse<String> resendVerification(
+            Authentication authentication
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+
+        String otp = emailVerificationService.resendVerification(userId);
+
+        // Gửi email sau khi giao dịch tạo OTP đã commit.
+        // Không đưa otp vào response.
+
+        return ApiResponse.<String>builder()
+                .message("Verification OTP requested successfully")
                 .build();
     }
 }

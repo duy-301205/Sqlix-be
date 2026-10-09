@@ -14,6 +14,7 @@ CREATE TABLE users (
                        avatar_url TEXT NULL,
                        occupation user_occupation NOT NULL DEFAULT 'OTHER',
                        system_role user_system_role NOT NULL DEFAULT 'USER',
+                       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
                        terms_accepted BOOLEAN NOT NULL DEFAULT FALSE,
                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -96,7 +97,13 @@ CREATE TABLE email_verification_tokens (
                                            token_hash VARCHAR(255) NOT NULL UNIQUE,
                                            expires_at TIMESTAMPTZ NOT NULL,
                                            used_at TIMESTAMPTZ NULL,
-                                           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                           attempt_count INT NOT NULL DEFAULT 0,
+                                           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                                            CONSTRAINT chk_email_otp_attempts
+                                                CHECK (attempt_count >= 0)
 );
 
 CREATE INDEX idx_email_verify_tokens_hash ON email_verification_tokens(token_hash);
+CREATE INDEX idx_email_verify_tokens_user_id
+    ON email_verification_tokens(user_id);
