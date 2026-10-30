@@ -25,6 +25,8 @@ public enum ErrorCode {
     OAUTH_ACCOUNT_LINKED_OTHER(1007, "Tài khoản mạng xã hội này đã được liên kết với người dùng khác.", HttpStatus.BAD_REQUEST),
     TERMS_NOT_ACCEPTED(1008, "Bạn phải đồng ý với điều khoản & chính sách để tiếp tục.", HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED(1009, "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.", HttpStatus.FORBIDDEN),
+    EMAIL_NOT_VERIFIED(1011, "Vui lòng xác minh email trước khi đăng nhập.", HttpStatus.FORBIDDEN),
+    OAUTH_TOKEN_INVALID(1012, "OAuth token không hợp lệ hoặc không thể xác minh danh tính.", HttpStatus.UNAUTHORIZED),
 
     // =========================================================================
     // 1100 - 1199: Profile & Gamification Settings

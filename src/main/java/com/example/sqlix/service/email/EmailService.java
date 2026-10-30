@@ -53,26 +53,26 @@ public class EmailService {
 
     public void sendPasswordResetOtp(
             String email,
-            String otp
+            String token
     ) {
         String content = """
                 Xin chào!
 
                 Bạn đã yêu cầu đặt lại mật khẩu SQLix.
 
-                Mã OTP của bạn là:
+                Mã đặt lại mật khẩu của bạn là:
 
                 %s
 
-                Mã có hiệu lực trong 5 phút.
+                Mã có hiệu lực trong 15 phút. Gửi mã này tới endpoint /api/auth/reset-password cùng mật khẩu mới.
                 Nếu không yêu cầu, hãy bỏ qua email này.
 
                 SQLix Team
-                """.formatted(otp);
+                """.formatted(token);
 
         sendEmail(
                 email,
-                "SQLix - Đặt lại mật khẩu",
+                "SQLix - Mã đặt lại mật khẩu",
                 content
         );
     }

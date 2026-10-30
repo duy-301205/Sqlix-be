@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findFirstByUsernameStartingWithOrderByUsernameDesc(String prefix);
+
     Optional<User> findByUsernameOrEmail(String username, String email);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

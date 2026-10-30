@@ -41,11 +41,11 @@ public class RefreshTokenService {
         return rawToken;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public RefreshToken verifyRefreshToken(String rawToken) {
         String tokenHash = TokenHashUtils.hash(rawToken);
 
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
 
         if (refreshToken.getRevokedAt() != null) {

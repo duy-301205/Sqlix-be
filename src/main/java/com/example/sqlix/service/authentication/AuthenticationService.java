@@ -108,6 +108,10 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.ACCOUNT_LOCKED);
         }
 
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+
         // Kiểm tra password
         if (!passwordEncoder.matches(
                 request.getPassword(),

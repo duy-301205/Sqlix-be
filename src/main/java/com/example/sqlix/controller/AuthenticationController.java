@@ -1,10 +1,12 @@
 package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.request.*;
-import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.LoginResponse;
 import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
+import com.example.sqlix.dto.response.ApiResponse;
+import com.example.sqlix.service.authentication.PasswordService;
+import com.example.sqlix.service.authentication.OAuthAuthenticationService;
 import com.example.sqlix.enums.VerifyResult;
 import com.example.sqlix.service.authentication.AuthenticationService;
 import com.example.sqlix.service.authentication.EmailVerificationService;
@@ -26,6 +28,30 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordService passwordService;
+    private final OAuthAuthenticationService oauthAuthenticationService;
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordService.requestPasswordReset(request.getEmail());
+        return ApiResponse.<Void>builder()
+                .code(200)
+                .message("Nếu email tồn tại, hướng dẫn đặt lại mật khẩu sẽ được gửi.").build();
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordService.resetPassword(request.getToken(), request.getNewPassword());
+        return ApiResponse.<Void>builder().code(200).message("Đặt lại mật khẩu thành công.").build();
+    }
+
+    @PostMapping("/oauth")
+    public ApiResponse<LoginResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request,
+                                                 HttpServletRequest httpRequest) {
+        LoginResponse response = oauthAuthenticationService.login(request.getProvider(), request.getAccessToken(),
+                httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+        return ApiResponse.<LoginResponse>builder().code(200).message("Login successfully").result(response).build();
+    }
 
     @PostMapping("/register")
     public ApiResponse<RegisterResponse> register(
