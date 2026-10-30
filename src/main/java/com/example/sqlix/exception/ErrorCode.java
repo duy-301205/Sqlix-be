@@ -15,6 +15,7 @@ public enum ErrorCode {
     // Phục vụ: Register, Login, OAuth, Reset Password, Header
     // =========================================================================
     USER_EXISTED(1000, "Tên đăng nhập hoặc email đã được sử dụng.", HttpStatus.BAD_REQUEST),
+    DATA_CONSTRAINT_VIOLATION(1010, "Dữ liệu không hợp lệ hoặc đã tồn tại. Vui lòng kiểm tra lại.", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1001, "Không tìm thấy thông tin người dùng.", HttpStatus.NOT_FOUND),
     USERNAME_INVALID(1002, "Tên đăng nhập không hợp lệ (chỉ gồm chữ, số và dấu gạch dưới).", HttpStatus.BAD_REQUEST),
     WRONG_PASSWORD(1003, "Mật khẩu không chính xác.", HttpStatus.BAD_REQUEST),

@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 public class RegisterRequest {
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50)
+    @jakarta.validation.constraints.Pattern(regexp = "^\\S+$", message = "Username must not contain whitespace")
     String username;
 
     @NotBlank(message = "Email is required")

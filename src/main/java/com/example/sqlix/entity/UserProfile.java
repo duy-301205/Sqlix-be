@@ -3,7 +3,6 @@ package com.example.sqlix.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,7 +45,6 @@ public class UserProfile {
     @Column(name = "bio", columnDefinition = "TEXT")
     String bio;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
     Instant updatedAt;
 }

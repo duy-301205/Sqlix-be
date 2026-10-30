@@ -1,15 +1,26 @@
--- Kích hoạt extension hỗ trợ sinh UUID ngẫu nhiên
+-- 1. KÍCH HOẠT EXTENSION
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- 2. ĐỊNH NGHĨA ENUM
 CREATE TYPE user_occupation AS ENUM ('STUDENT', 'PROFESSIONAL', 'OTHER');
 CREATE TYPE user_system_role AS ENUM ('USER', 'INSTRUCTOR', 'ADMIN');
 CREATE TYPE oauth_provider AS ENUM ('GOOGLE', 'GITHUB');
 
+-- 3. HÀM TRIGGER CHUNG: Tự động cập nhật updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. BẢNG USERS
 CREATE TABLE users (
                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                        username VARCHAR(50) NOT NULL UNIQUE,
                        email VARCHAR(255) NOT NULL UNIQUE,
-                       password_hash VARCHAR(255) NULL, -- NULL nếu chỉ đăng nhập bằng Google/GitHub
+                       password_hash VARCHAR(255) NULL,
                        full_name VARCHAR(100) NOT NULL,
                        avatar_url TEXT NULL,
                        occupation user_occupation NOT NULL DEFAULT 'OTHER',
@@ -18,30 +29,43 @@ CREATE TABLE users (
                        terms_accepted BOOLEAN NOT NULL DEFAULT FALSE,
                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- Đảm bảo username không có khoảng trắng và email đúng format cơ bản
+                       CONSTRAINT chk_username_format CHECK (username !~ '\s'),
+    CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
 );
 
+-- Index hỗ trợ tìm kiếm (không dùng cho các cột đã UNIQUE)
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 
+CREATE TRIGGER tr_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();
 
--- 3. USER PROFILES & GAMIFICATION (Streak, Target)
+-- 5. BẢNG USER PROFILES & GAMIFICATION
 CREATE TABLE user_profiles (
                                user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                               current_streak INT NOT NULL DEFAULT 0,
-                               longest_streak INT NOT NULL DEFAULT 0,
+                               current_streak INT NOT NULL DEFAULT 0 CHECK (current_streak >= 0),
+                               longest_streak INT NOT NULL DEFAULT 0 CHECK (longest_streak >= 0),
                                last_active_date DATE NULL,
                                daily_target_minutes INT NOT NULL DEFAULT 15,
                                bio TEXT NULL,
                                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tự động tạo bản ghi user_profiles khi có user mới đăng ký
+CREATE TRIGGER tr_user_profiles_updated_at
+    BEFORE UPDATE ON user_profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();
+
+-- Hàm tự động tạo profile khi có user mới
 CREATE OR REPLACE FUNCTION handle_new_user_profile()
 RETURNS TRIGGER AS $$
 BEGIN
-INSERT INTO user_profiles (user_id)
-VALUES (NEW.id);
+INSERT INTO user_profiles (user_id) VALUES (NEW.id);
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -51,7 +75,7 @@ CREATE TRIGGER tr_create_user_profile
     FOR EACH ROW
     EXECUTE FUNCTION handle_new_user_profile();
 
--- 4. OAUTH ACCOUNTS
+-- 6. BẢNG OAUTH ACCOUNTS
 CREATE TABLE oauth_accounts (
                                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -63,7 +87,7 @@ CREATE TABLE oauth_accounts (
 
 CREATE INDEX idx_oauth_accounts_user_id ON oauth_accounts(user_id);
 
--- 5. REFRESH TOKENS (Quản lý phiên đăng nhập)
+-- 7. BẢNG REFRESH TOKENS
 CREATE TABLE refresh_tokens (
                                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -76,21 +100,20 @@ CREATE TABLE refresh_tokens (
 );
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+-- Đã BỎ index thừa trên token_hash vì UNIQUE đã bao hàm.
 
--- 6. PASSWORD RESET TOKENS
+-- 8. BẢNG PASSWORD RESET TOKENS
 CREATE TABLE password_reset_tokens (
                                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                                        token_hash VARCHAR(255) NOT NULL UNIQUE,
                                        expires_at TIMESTAMPTZ NOT NULL,
                                        used_at TIMESTAMPTZ NULL,
-                                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+-- Đã BỎ index thừa.
 
-CREATE INDEX idx_pwd_reset_tokens_hash ON password_reset_tokens(token_hash);
-
--- 7. EMAIL VERIFICATION TOKENS
+-- 9. BẢNG EMAIL VERIFICATION TOKENS
 CREATE TABLE email_verification_tokens (
                                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -99,11 +122,8 @@ CREATE TABLE email_verification_tokens (
                                            used_at TIMESTAMPTZ NULL,
                                            attempt_count INT NOT NULL DEFAULT 0,
                                            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                                            CONSTRAINT chk_email_otp_attempts
-                                                CHECK (attempt_count >= 0)
+                                           CONSTRAINT chk_email_otp_attempts CHECK (attempt_count >= 0)
 );
 
-CREATE INDEX idx_email_verify_tokens_hash ON email_verification_tokens(token_hash);
-CREATE INDEX idx_email_verify_tokens_user_id
-    ON email_verification_tokens(user_id);
+CREATE INDEX idx_email_verify_tokens_user_id ON email_verification_tokens(user_id);
+-- Đã BỎ index thừa.

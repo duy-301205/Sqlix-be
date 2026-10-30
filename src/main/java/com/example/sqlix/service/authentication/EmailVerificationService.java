@@ -14,6 +14,7 @@ import com.example.sqlix.utils.OtpUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -88,7 +89,6 @@ public class EmailVerificationService {
 
         // Xác minh thành công
         user.setEmailVerified(true);
-        user.setUpdatedAt(now);
 
         // Vô hiệu hóa toàn bộ OTP còn lại
         for (EmailVerificationToken oldToken : tokens) {
@@ -113,7 +113,11 @@ public class EmailVerificationService {
                         .createdAt(now)
                         .build();
 
-        tokenRepository.save(token);
+        try {
+            tokenRepository.saveAndFlush(token);
+        } catch (DataIntegrityViolationException ex) {
+            throw new AppException(ErrorCode.DATA_CONSTRAINT_VIOLATION);
+        }
 
         eventPublisher.publishEvent(
                 new OtpEmailEvent(

@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Locale;
 
@@ -31,13 +32,16 @@ public class AuthenticationService {
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
+        String username = request.getUsername().trim();
+        String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
         // 1. Kiểm tra username
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(username)) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
         // 2. Kiểm tra email
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(email)) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
@@ -48,8 +52,8 @@ public class AuthenticationService {
 
         // 4. Tạo user
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(username)
+                .email(email)
                 .passwordHash(
                         passwordEncoder.encode(request.getPassword())
                 )
@@ -63,7 +67,13 @@ public class AuthenticationService {
                 .build();
 
         // 5. Lưu database
-        User savedUser = userRepository.saveAndFlush(user);
+        User savedUser;
+        try {
+            // PostgreSQL trigger creates user_profiles; do not create a profile in JPA.
+            savedUser = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new AppException(ErrorCode.DATA_CONSTRAINT_VIOLATION);
+        }
 
         emailVerificationService.sendInitialVerification(savedUser);
 
