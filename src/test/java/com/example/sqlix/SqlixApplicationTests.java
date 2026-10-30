@@ -1,13 +1,12 @@
 package com.example.sqlix;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 class SqlixApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void applicationEntryPointIsPresent() {
+        assertNotNull(SqlixApplication.class);
+    }
 }

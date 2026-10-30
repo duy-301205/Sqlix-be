@@ -10,7 +10,10 @@ import com.example.sqlix.service.authentication.OAuthAuthenticationService;
 import com.example.sqlix.enums.VerifyResult;
 import com.example.sqlix.service.authentication.AuthenticationService;
 import com.example.sqlix.service.authentication.EmailVerificationService;
+import com.example.sqlix.exception.AppException;
+import com.example.sqlix.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -18,6 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 
@@ -107,14 +113,40 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestBody @Valid LogoutRequest request,
-                                    Authentication authentication) {
-        authenticationService.logout(request, authentication.getName());
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestBody(required = false) LogoutRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        String refreshToken = request == null ? null : request.getRefreshToken();
+        String cookieToken = null;
+        Cookie[] cookies = httpRequest.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refresh_token".equals(cookie.getName())) {
+                    cookieToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        boolean clearCookie = cookieToken != null;
+        if (refreshToken == null || refreshToken.isBlank()) refreshToken = cookieToken;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new AppException(ErrorCode.REFRESH_TOKEN_IS_MISSING);
+        }
+        LogoutRequest logoutRequest = new LogoutRequest();
+        logoutRequest.setRefreshToken(refreshToken);
+        authenticationService.logout(logoutRequest, authentication.getName());
 
-        return ApiResponse.<Void>builder()
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code(200)
                 .message("Logout successful")
                 .build();
+        if (clearCookie) {
+            ResponseCookie expiredCookie = ResponseCookie.from("refresh_token", "")
+                    .httpOnly(true).secure(true).sameSite("Strict").path("/").maxAge(0).build();
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, expiredCookie.toString()).body(response);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout-all")

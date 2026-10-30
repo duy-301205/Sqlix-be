@@ -28,6 +28,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByUsernameOrEmail(String username, String email);
 
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.profile WHERE u.email = :email")
+    Optional<User> findByEmailWithProfile(@Param("email") String email);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") UUID id);
