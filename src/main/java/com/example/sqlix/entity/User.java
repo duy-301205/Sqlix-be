@@ -96,4 +96,16 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<EmailVerificationToken> emailVerificationTokens = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    List<UserDailyMetric> dailyMetrics = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    List<UserTopicMastery> topicMasteries = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    List<UserRecentActivity> recentActivities = new ArrayList<>();
 }
