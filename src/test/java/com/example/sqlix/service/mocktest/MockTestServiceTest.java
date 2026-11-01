@@ -1,5 +1,6 @@
 package com.example.sqlix.service.mocktest;
 
+import com.example.sqlix.dto.response.WorkspaceQuestionDto;
 import com.example.sqlix.entity.MockTest;
 import com.example.sqlix.entity.MockTestQuestion;
 import com.example.sqlix.entity.PracticeDatabase;

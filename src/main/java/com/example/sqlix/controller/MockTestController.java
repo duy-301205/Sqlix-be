@@ -2,10 +2,13 @@ package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.Pagination;
 import com.example.sqlix.dto.response.ApiResponse;
+import com.example.sqlix.dto.request.AnswerRequestDto;
+import com.example.sqlix.dto.response.AnswerResponseDto;
 import com.example.sqlix.dto.response.MockTestCatalogDto;
 import com.example.sqlix.dto.response.MockTestDetailDto;
 import com.example.sqlix.dto.response.SessionStartResponse;
 import com.example.sqlix.dto.response.TestWorkspaceDto;
+import com.example.sqlix.dto.response.TestResultDto;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.DifficultyLevel;
 import com.example.sqlix.service.mocktest.MockTestService;
@@ -76,6 +79,33 @@ public class MockTestController {
         return ApiResponse.<TestWorkspaceDto>builder()
                 .code(200)
                 .result(mockTestService.getWorkspace(currentUserId(), sessionId))
+                .build();
+    }
+
+    @PostMapping("/test-sessions/{sessionId}/answers/{questionId}")
+    public ApiResponse<AnswerResponseDto> submitAnswer(
+            @PathVariable UUID sessionId,
+            @PathVariable UUID questionId,
+            @org.springframework.web.bind.annotation.RequestBody AnswerRequestDto request) {
+        return ApiResponse.<AnswerResponseDto>builder()
+                .code(200)
+                .result(mockTestService.submitAnswer(currentUserId(), sessionId, questionId, request))
+                .build();
+    }
+
+    @PostMapping("/test-sessions/{sessionId}/submit")
+    public ApiResponse<TestResultDto> submitTest(@PathVariable UUID sessionId) {
+        return ApiResponse.<TestResultDto>builder()
+                .code(200)
+                .result(mockTestService.submitTest(currentUserId(), sessionId))
+                .build();
+    }
+
+    @GetMapping("/test-sessions/{sessionId}/result")
+    public ApiResponse<TestResultDto> getTestResult(@PathVariable UUID sessionId) {
+        return ApiResponse.<TestResultDto>builder()
+                .code(200)
+                .result(mockTestService.getTestResult(currentUserId(), sessionId))
                 .build();
     }
 
