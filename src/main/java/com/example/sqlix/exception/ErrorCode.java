@@ -66,6 +66,7 @@ public enum ErrorCode {
     EXAM_NOT_IN_PROGRESS(1403, "Phiên làm bài thi không còn khả dụng.", HttpStatus.BAD_REQUEST),
     TEST_SESSION_NOT_FOUND(1404, "Phiên làm bài thi không tồn tại.", HttpStatus.NOT_FOUND),
     EXAM_RETRY_LIMIT_REACHED(1405, "Bạn đã vượt quá số lần thử cho câu hỏi này.", HttpStatus.BAD_REQUEST),
+    MOCK_TEST_QUESTION_NOT_FOUND(1406, "Câu hỏi thi thử không tồn tại.", HttpStatus.NOT_FOUND),
 
     INVALID_OTP(1501, "Invalid verification OTP", HttpStatus.BAD_REQUEST),
     EXPIRED_OTP(1502, "Verification OTP has expired", HttpStatus.BAD_REQUEST),
