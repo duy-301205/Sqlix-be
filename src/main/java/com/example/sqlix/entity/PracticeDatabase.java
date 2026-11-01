@@ -2,6 +2,7 @@ package com.example.sqlix.entity;
 
 import com.example.sqlix.enums.DifficultyLevel;
 import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -73,6 +74,6 @@ public class PracticeDatabase {
     @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "database")
+    @OneToMany(mappedBy = "database", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PracticeExercise> exercises = new ArrayList<>();
 }
