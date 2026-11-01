@@ -3,9 +3,12 @@ package com.example.sqlix.controller;
 import com.example.sqlix.dto.response.DatabaseCatalogDto;
 import com.example.sqlix.dto.response.DatabaseDetailDto;
 import com.example.sqlix.dto.response.ExerciseSummaryDto;
+import com.example.sqlix.dto.response.QueryResultDto;
+import com.example.sqlix.dto.response.SubmissionResultDto;
 import com.example.sqlix.dto.response.WorkspaceDto;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.DifficultyLevel;
+import com.example.sqlix.enums.SubmissionStatus;
 import com.example.sqlix.service.practice.PracticeService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +21,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +31,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -100,5 +105,40 @@ class PracticeControllerTest {
                 .andExpect(jsonPath("$.result.lastSubmittedQuery").value("SELECT * FROM products;"));
 
         verify(practiceService).getWorkspace(userId, exerciseId);
+    }
+
+    @Test
+    void runQueryReturnsOk() throws Exception {
+        UUID exerciseId = UUID.randomUUID();
+        when(practiceService.runQuery(exerciseId, "SELECT 1"))
+                .thenReturn(new QueryResultDto(List.of("?column?"), List.of(List.of(1)), null));
+
+        mockMvc.perform(post("/api/practice/exercises/{exerciseId}/run", exerciseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"query\":\"SELECT 1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.result.columns[0]").value("?column?"))
+                .andExpect(jsonPath("$.result.rows[0][0]").value(1));
+
+        verify(practiceService).runQuery(exerciseId, "SELECT 1");
+    }
+
+    @Test
+    void submitCodeReturnsOk() throws Exception {
+        UUID exerciseId = UUID.randomUUID();
+        when(practiceService.submitCode(userId, exerciseId, "SELECT 1"))
+                .thenReturn(new SubmissionResultDto(SubmissionStatus.PASSED, 100, "Correct",
+                        new QueryResultDto(List.of("?column?"), List.of(List.of(1)), null)));
+
+        mockMvc.perform(post("/api/practice/exercises/{exerciseId}/submit", exerciseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"query\":\"SELECT 1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.result.status").value("PASSED"))
+                .andExpect(jsonPath("$.result.score").value(100));
+
+        verify(practiceService).submitCode(userId, exerciseId, "SELECT 1");
     }
 }

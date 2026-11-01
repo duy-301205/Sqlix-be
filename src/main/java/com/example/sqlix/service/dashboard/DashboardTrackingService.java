@@ -70,7 +70,9 @@ public class DashboardTrackingService {
             throw new IllegalArgumentException("Exercise score cannot be negative");
         }
         dailyMetricRepository.incrementExercisesSolved(userId, score);
-        incrementTopicMastery(userId, topicCode);
+        if (topicCode != null) {
+            incrementTopicMastery(userId, topicCode);
+        }
 
         UserRecentActivity activity = new UserRecentActivity();
         activity.setUser(userRepository.getReferenceById(userId));

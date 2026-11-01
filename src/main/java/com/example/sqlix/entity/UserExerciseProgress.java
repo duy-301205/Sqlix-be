@@ -39,6 +39,6 @@ public class UserExerciseProgress {
     @Column(name = "is_passed", nullable = false)
     private Boolean isPassed = false;
 
-    @Column(name = "last_attempt_at", nullable = false, insertable = false, updatable = false)
+    @Column(name = "last_attempt_at", nullable = false)
     private Instant lastAttemptAt;
 }

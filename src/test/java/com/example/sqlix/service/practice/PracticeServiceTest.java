@@ -2,10 +2,16 @@ package com.example.sqlix.service.practice;
 
 import com.example.sqlix.entity.PracticeDatabase;
 import com.example.sqlix.entity.PracticeExercise;
+import com.example.sqlix.entity.User;
 import com.example.sqlix.entity.UserExerciseProgress;
 import com.example.sqlix.entity.UserExerciseProgressId;
 import com.example.sqlix.entity.UserExerciseSubmission;
 import com.example.sqlix.enums.DifficultyLevel;
+import com.example.sqlix.enums.SubmissionStatus;
+import com.example.sqlix.dto.response.QueryResultDto;
+import com.example.sqlix.repository.UserRepository;
+import com.example.sqlix.service.dashboard.DashboardTrackingService;
+import com.example.sqlix.service.practice.SqlExecutionService;
 import com.example.sqlix.repository.PracticeDatabaseRepository;
 import com.example.sqlix.repository.PracticeExerciseRepository;
 import com.example.sqlix.repository.UserExerciseProgressRepository;
@@ -22,6 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +41,9 @@ class PracticeServiceTest {
     @Mock PracticeExerciseRepository exerciseRepository;
     @Mock UserExerciseProgressRepository progressRepository;
     @Mock UserExerciseSubmissionRepository submissionRepository;
+    @Mock SqlExecutionService sqlExecutionService;
+    @Mock UserRepository userRepository;
+    @Mock DashboardTrackingService dashboardTrackingService;
     @InjectMocks PracticeService practiceService;
 
     @Test
@@ -88,6 +101,92 @@ class PracticeServiceTest {
         assertThat(workspace.lastSubmittedQuery()).isEqualTo("SELECT * FROM products;");
     }
 
+    @Test
+    void submitCodePassesWhenColumnsAndRowsMatchRegardlessOfRowOrder() {
+        UUID userId = UUID.randomUUID();
+        PracticeDatabase database = database();
+        PracticeExercise exercise = exercise(database, "Find products", 1);
+        UUID exerciseId = exercise.getId();
+        User user = User.builder().id(userId).build();
+        QueryResultDto actual = new QueryResultDto(List.of("id", "price"), List.of(
+                List.of(2, new BigDecimal("20.0")), List.of(1, new BigDecimal("10.00"))), null);
+        QueryResultDto expected = new QueryResultDto(List.of("id", "price"), List.of(
+                List.of(1, new BigDecimal("10.0")), List.of(2, new BigDecimal("20.00"))), null);
+        UserExerciseProgressId progressId = new UserExerciseProgressId(userId, exerciseId);
+        when(exerciseRepository.findById(exerciseId)).thenReturn(Optional.of(exercise));
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), "SELECT id, price FROM products", 10_001))
+                .thenReturn(actual);
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), exercise.getSolutionQuery(), 10_001))
+                .thenReturn(expected);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(progressRepository.findByIdForUpdate(progressId)).thenReturn(Optional.empty());
+
+        var result = practiceService.submitCode(userId, exerciseId, "SELECT id, price FROM products");
+
+        assertThat(result.status()).isEqualTo(SubmissionStatus.PASSED);
+        assertThat(result.score()).isEqualTo(100);
+        assertThat(result.actualResult()).isEqualTo(actual);
+        verify(submissionRepository).saveAndFlush(org.mockito.ArgumentMatchers.argThat(submission ->
+                submission.getStatus() == SubmissionStatus.PASSED && submission.getScore() == 100));
+        verify(progressRepository).saveAndFlush(org.mockito.ArgumentMatchers.argThat(progress ->
+                progress.getHighestScore() == 100 && Boolean.TRUE.equals(progress.getIsPassed())));
+        verify(dashboardTrackingService).logExerciseSolved(userId,
+                com.example.sqlix.enums.SqlTopicCode.BASIC_SELECT, exerciseId, "Find products", 100);
+    }
+
+    @Test
+    void submitCodeFailsWhenReturnedRowsDoNotMatch() {
+        UUID userId = UUID.randomUUID();
+        PracticeDatabase database = database();
+        PracticeExercise exercise = exercise(database, "Find products", 1);
+        UUID exerciseId = exercise.getId();
+        User user = User.builder().id(userId).build();
+        QueryResultDto actual = new QueryResultDto(List.of("id"), List.of(List.of(5)), null);
+        QueryResultDto expected = new QueryResultDto(List.of("id"), List.of(List.of(1)), null);
+        UserExerciseProgressId progressId = new UserExerciseProgressId(userId, exerciseId);
+        when(exerciseRepository.findById(exerciseId)).thenReturn(Optional.of(exercise));
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), "SELECT id FROM products", 10_001))
+                .thenReturn(actual);
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), exercise.getSolutionQuery(), 10_001))
+                .thenReturn(expected);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(progressRepository.findByIdForUpdate(progressId)).thenReturn(Optional.empty());
+
+        var result = practiceService.submitCode(userId, exerciseId, "SELECT id FROM products");
+
+        assertThat(result.status()).isEqualTo(SubmissionStatus.FAILED);
+        assertThat(result.score()).isZero();
+        assertThat(result.feedback()).isEqualTo("Nội dung dữ liệu trả về không khớp.");
+        verify(dashboardTrackingService, never()).logExerciseSolved(eq(userId),
+                org.mockito.ArgumentMatchers.any(), eq(exerciseId), eq("Find products"), eq(0));
+    }
+
+    @Test
+    void submitCodeReturnsErrorWhenUserQueryHasSqlError() {
+        UUID userId = UUID.randomUUID();
+        PracticeDatabase database = database();
+        PracticeExercise exercise = exercise(database, "Find products", 1);
+        UUID exerciseId = exercise.getId();
+        User user = User.builder().id(userId).build();
+        QueryResultDto actual = QueryResultDto.error("Syntax error near FROM");
+        UserExerciseProgressId progressId = new UserExerciseProgressId(userId, exerciseId);
+        when(exerciseRepository.findById(exerciseId)).thenReturn(Optional.of(exercise));
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), "SELEC broken", 10_001))
+                .thenReturn(actual);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(progressRepository.findByIdForUpdate(progressId)).thenReturn(Optional.empty());
+
+        var result = practiceService.submitCode(userId, exerciseId, "SELEC broken");
+
+        assertThat(result.status()).isEqualTo(SubmissionStatus.ERROR);
+        assertThat(result.score()).isZero();
+        assertThat(result.feedback()).isEqualTo("Syntax error near FROM");
+        verify(sqlExecutionService, never()).executeSelect(database.getInitSqlScript(), exercise.getSolutionQuery(), 10_001);
+        verify(dashboardTrackingService, never()).logExerciseSolved(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
     private PracticeDatabase database() {
         PracticeDatabase database = new PracticeDatabase();
         database.setId(UUID.randomUUID());
@@ -95,6 +194,7 @@ class PracticeServiceTest {
         database.setSlug("shop-db");
         database.setDifficulty(DifficultyLevel.MEDIUM);
         database.setSchemaData(Map.of("tables", List.of("products")));
+        database.setInitSqlScript("CREATE TABLE products (id INT, price NUMERIC);");
         database.setTablesCount(1);
         database.setExercisesCount(2);
         database.setRating(new BigDecimal("4.80"));
