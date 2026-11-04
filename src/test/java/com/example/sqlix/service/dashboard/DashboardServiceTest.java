@@ -104,7 +104,13 @@ class DashboardServiceTest {
 
         var chart = dashboardService.get30DayActivityChart(userId);
 
-        assertThat(chart).containsExactly(new com.example.sqlix.dto.response.DailyChartResponse(today, 0, 0.0));
+        assertThat(chart).hasSize(30);
+        assertThat(chart.getFirst().date()).isEqualTo(today.minusDays(29));
+        assertThat(chart.getLast()).isEqualTo(new com.example.sqlix.dto.response.DailyChartResponse(today, 0, 0.0));
+        assertThat(chart).allSatisfy(day -> {
+            assertThat(day.exercisesSolved()).isZero();
+            assertThat(day.averageScore()).isZero();
+        });
     }
 
     @Test
@@ -120,7 +126,34 @@ class DashboardServiceTest {
 
         var chart = dashboardService.get30DayActivityChart(userId);
 
-        assertThat(chart.getFirst().averageScore()).isEqualTo(75.0);
+        assertThat(chart).hasSize(30);
+        assertThat(chart.getLast().date()).isEqualTo(today);
+        assertThat(chart.getLast().averageScore()).isEqualTo(75.0);
+        assertThat(chart.getLast().exercisesSolved()).isEqualTo(4);
+        assertThat(chart.get(28).averageScore()).isZero();
+    }
+
+    @Test
+    void get30DayActivityChartFillsAllMissingDatesWithZeroes() {
+        UUID userId = UUID.randomUUID();
+        LocalDate today = LocalDate.now();
+        LocalDate activityDate = today.minusDays(10);
+        UserDailyMetric metric = new UserDailyMetric();
+        metric.setId(new UserDailyMetricId(userId, activityDate));
+        metric.setExercisesSolved(2);
+        metric.setTotalScore(120);
+        when(dailyMetricRepository.findLast30Days(userId, today.minusDays(29), today))
+                .thenReturn(List.of(metric));
+
+        var chart = dashboardService.get30DayActivityChart(userId);
+
+        assertThat(chart).hasSize(30);
+        assertThat(chart.get(19)).isEqualTo(
+                new com.example.sqlix.dto.response.DailyChartResponse(activityDate, 2, 60.0));
+        assertThat(chart.get(18)).isEqualTo(
+                new com.example.sqlix.dto.response.DailyChartResponse(activityDate.minusDays(1), 0, 0.0));
+        assertThat(chart.get(20)).isEqualTo(
+                new com.example.sqlix.dto.response.DailyChartResponse(activityDate.plusDays(1), 0, 0.0));
     }
 
     @Test

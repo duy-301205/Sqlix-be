@@ -15,8 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDate;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +59,8 @@ public class DashboardService {
     public List<DailyChartResponse> get30DayActivityChart(UUID userId) {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(29);
-        return dailyMetricRepository.findLast30Days(userId, startDate, today).stream()
+        Map<LocalDate, DailyChartResponse> metricsByDate = dailyMetricRepository
+                .findLast30Days(userId, startDate, today).stream()
                 .map(metric -> {
                     int exercisesSolved = metric.getExercisesSolved() == null ? 0 : metric.getExercisesSolved();
                     double averageScore = exercisesSolved == 0 || metric.getTotalScore() == null
@@ -63,6 +68,11 @@ public class DashboardService {
                             : (double) metric.getTotalScore() / exercisesSolved;
                     return new DailyChartResponse(metric.getId().getRecordDate(), exercisesSolved, averageScore);
                 })
+                .collect(Collectors.toMap(DailyChartResponse::date, Function.identity()));
+
+        return IntStream.range(0, 30)
+                .mapToObj(offset -> startDate.plusDays(offset))
+                .map(date -> metricsByDate.getOrDefault(date, new DailyChartResponse(date, 0, 0.0)))
                 .toList();
     }
 
