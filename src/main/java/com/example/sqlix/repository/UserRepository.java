@@ -4,6 +4,8 @@ import com.example.sqlix.entity.User;
 import com.example.sqlix.enums.UserSystemRole;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,20 @@ import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
+    @Query("""
+            select u from User u
+            where (:search is null or lower(u.username) like concat('%', :search, '%')
+                   or lower(u.email) like concat('%', :search, '%')
+                   or lower(u.fullName) like concat('%', :search, '%'))
+              and (:role is null or u.systemRole = :role)
+              and (:active is null or u.isActive = :active)
+            """)
+    Page<User> searchAdminUsers(
+            @Param("search") String search,
+            @Param("role") UserSystemRole role,
+            @Param("active") Boolean active,
+            Pageable pageable);
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

@@ -10,4 +10,8 @@ import java.util.UUID;
 public interface LessonRepository extends JpaRepository<Lesson, UUID> {
     @EntityGraph(attributePaths = "sections")
     Optional<Lesson> findBySlug(String slug);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, UUID id);
 }

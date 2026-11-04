@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface UserExerciseProgressRepository extends JpaRepository<UserExerciseProgress, UserExerciseProgressId> {
+    long countByIsPassedTrue();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select progress from UserExerciseProgress progress where progress.id = :id")
     java.util.Optional<UserExerciseProgress> findByIdForUpdate(@Param("id") UserExerciseProgressId id);

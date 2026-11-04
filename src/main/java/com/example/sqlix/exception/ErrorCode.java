@@ -44,6 +44,7 @@ public enum ErrorCode {
     LESSON_NOT_FOUND(1200, "Bài học không tồn tại.", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(1201, "Chuyên đề học tập không tồn tại.", HttpStatus.NOT_FOUND),
     LESSON_ALREADY_COMPLETED(1202, "Bài học đã được đánh dấu hoàn thành trước đó.", HttpStatus.BAD_REQUEST),
+    LESSON_SECTION_NOT_FOUND(1203, "Phần nội dung bài học không tồn tại.", HttpStatus.NOT_FOUND),
 
     // =========================================================================
     // 1300 - 1399: Practice & SQL Sandbox
