@@ -5,6 +5,8 @@ import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.MockTestHistoryItemDto;
 import com.example.sqlix.dto.response.MockTestHistorySummaryDto;
 import com.example.sqlix.dto.response.PagedResponseDto;
+import com.example.sqlix.dto.response.MockTestHistoryDetailDto;
+import com.example.sqlix.dto.response.ProgressTrendDto;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.service.mocktest.MockTestHistoryService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,24 @@ public class MockTestHistoryController {
     public ApiResponse<MockTestHistorySummaryDto> getSummary() {
         return ApiResponse.<MockTestHistorySummaryDto>builder().code(200)
                 .result(historyService.getUserHistorySummary(currentUserId())).build();
+    }
+
+    @GetMapping("/trends")
+    public ApiResponse<java.util.List<ProgressTrendDto>> getTrends(@RequestParam(defaultValue = "10") int limit) {
+        return ApiResponse.<java.util.List<ProgressTrendDto>>builder().code(200)
+                .result(historyService.getScoreTrends(currentUserId(), limit)).build();
+    }
+
+    @GetMapping("/{sessionId}")
+    public ApiResponse<MockTestHistoryDetailDto> getDetail(@PathVariable UUID sessionId) {
+        return ApiResponse.<MockTestHistoryDetailDto>builder().code(200)
+                .result(historyService.getHistoryDetail(currentUserId(), sessionId)).build();
+    }
+
+    @DeleteMapping("/{sessionId}")
+    public ApiResponse<Void> deleteSession(@PathVariable UUID sessionId) {
+        historyService.deleteUserSession(currentUserId(), sessionId);
+        return ApiResponse.<Void>builder().code(200).build();
     }
 
     @GetMapping

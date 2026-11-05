@@ -1,6 +1,11 @@
 package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.response.MockTestHistorySummaryDto;
+import com.example.sqlix.dto.response.MockTestHistoryDetailDto;
+import com.example.sqlix.dto.response.ProgressTrendDto;
+import com.example.sqlix.exception.AppException;
+import com.example.sqlix.exception.ErrorCode;
+import com.example.sqlix.exception.GlobalExceptionHandler;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.service.mocktest.MockTestHistoryService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +27,7 @@ class MockTestHistoryControllerTest {
     private UUID userId;
     @BeforeEach void setup() {
         service=mock(MockTestHistoryService.class); userId=UUID.randomUUID();
-        mvc=MockMvcBuilders.standaloneSetup(new MockTestHistoryController(service)).build();
+        mvc=MockMvcBuilders.standaloneSetup(new MockTestHistoryController(service)).setControllerAdvice(new GlobalExceptionHandler()).build();
         User user=new User(); user.setId(userId);
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user,null));
     }
@@ -38,6 +43,28 @@ class MockTestHistoryControllerTest {
         mvc.perform(get("/api/mock-tests/history").param("page","0").param("size","10"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.result.content").isArray()).andExpect(jsonPath("$.result.totalElements").value(0));
+    }
+    @Test void detailEndpointReturnsQuestionExplanation() throws Exception {
+        UUID sessionId=UUID.randomUUID();
+        var question=new MockTestHistoryDetailDto.QuestionDetail(UUID.randomUUID(),"MULTIPLE_CHOICE","Prompt","A","A","Reason",1,1,true);
+        when(service.getHistoryDetail(userId,sessionId)).thenReturn(new MockTestHistoryDetailDto(sessionId,UUID.randomUUID(),"Test",
+                com.example.sqlix.enums.DifficultyLevel.EASY,java.time.Instant.now(),30,100,true,
+                com.example.sqlix.enums.TestSessionStatus.COMPLETED,List.of(question)));
+        mvc.perform(get("/api/mock-tests/history/{sessionId}",sessionId)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.questions[0].explanation").value("Reason"));
+    }
+    @Test void trendsEndpointReturnsScoreSeries() throws Exception {
+        when(service.getScoreTrends(userId,10)).thenReturn(List.of(new ProgressTrendDto(java.time.Instant.now(),80,"Test",true)));
+        mvc.perform(get("/api/mock-tests/history/trends")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.result[0].score").value(80));
+    }
+    @Test void detailEndpointReturns404WhenSessionIsUnavailableToUser() throws Exception {
+        UUID sessionId=UUID.randomUUID(); when(service.getHistoryDetail(userId,sessionId)).thenThrow(new AppException(ErrorCode.TEST_SESSION_NOT_FOUND));
+        mvc.perform(get("/api/mock-tests/history/{sessionId}",sessionId)).andExpect(status().isNotFound());
+    }
+    @Test void deleteEndpointReturns200() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/mock-tests/history/{sessionId}",UUID.randomUUID()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
     }
     @org.junit.jupiter.api.AfterEach void cleanup(){SecurityContextHolder.clearContext();}
 }
