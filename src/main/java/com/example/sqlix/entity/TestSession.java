@@ -54,8 +54,23 @@ public class TestSession {
     @Column(name = "end_time")
     private Instant endTime;
 
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private Instant createdAt;
+
     @Column(name = "total_score", nullable = false)
     private Integer totalScore = 0;
+
+    @Column(name = "duration_seconds", insertable = false, updatable = false)
+    private Integer durationSeconds;
+
+    @Column(name = "correct_count", insertable = false, updatable = false)
+    private Integer correctCount;
+
+    @Column(name = "total_questions", insertable = false, updatable = false)
+    private Integer totalQuestions;
+
+    @Column(name = "is_passed", insertable = false, updatable = false)
+    private Boolean isPassed;
 
     @OneToMany(mappedBy = "session", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<TestSessionAnswer> answers = new ArrayList<>();
