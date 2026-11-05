@@ -4,10 +4,8 @@ import com.example.sqlix.dto.request.HistoryFilterRequest;
 import com.example.sqlix.dto.response.MockTestHistoryItemDto;
 import com.example.sqlix.dto.response.MockTestHistorySummaryDto;
 import com.example.sqlix.entity.TestSession;
-import com.example.sqlix.entity.UserMockTestSummary;
 import com.example.sqlix.enums.TestSessionStatus;
 import com.example.sqlix.repository.TestSessionRepository;
-import com.example.sqlix.repository.UserMockTestSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -20,10 +18,9 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class MockTestHistoryService {
     private final TestSessionRepository sessionRepository;
-    private final UserMockTestSummaryRepository summaryRepository;
 
     public MockTestHistorySummaryDto getUserHistorySummary(UUID userId) {
-        return summaryRepository.findById(userId).map(this::toSummary)
+        return sessionRepository.findHistorySummaryByUserId(userId).map(this::toSummary)
                 .orElseGet(() -> new MockTestHistorySummaryDto(0, 0d, 0, 0d));
     }
 
@@ -46,7 +43,7 @@ public class MockTestHistoryService {
         return sessionRepository.findHistory(userId, keyword, passed, filter.getDifficulty(), pageable).map(this::toItem);
     }
 
-    private MockTestHistorySummaryDto toSummary(UserMockTestSummary row) {
+    private MockTestHistorySummaryDto toSummary(com.example.sqlix.repository.UserMockTestSummaryProjection row) {
         return new MockTestHistorySummaryDto(n(row.getTotalTestsTaken()), d(row.getAverageScore()),
                 row.getHighestScore() == null ? 0 : row.getHighestScore(), d(row.getPassRatePercentage()));
     }

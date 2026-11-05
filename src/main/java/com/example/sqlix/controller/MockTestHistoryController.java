@@ -4,6 +4,7 @@ import com.example.sqlix.dto.request.HistoryFilterRequest;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.MockTestHistoryItemDto;
 import com.example.sqlix.dto.response.MockTestHistorySummaryDto;
+import com.example.sqlix.dto.response.PagedResponseDto;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.service.mocktest.MockTestHistoryService;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,10 @@ public class MockTestHistoryController {
     }
 
     @GetMapping
-    public ApiResponse<Page<MockTestHistoryItemDto>> getHistory(@ModelAttribute HistoryFilterRequest request) {
-        return ApiResponse.<Page<MockTestHistoryItemDto>>builder().code(200)
-                .result(historyService.getUserHistoryList(currentUserId(), request)).build();
+    public ApiResponse<PagedResponseDto<MockTestHistoryItemDto>> getHistory(@ModelAttribute HistoryFilterRequest request) {
+        Page<MockTestHistoryItemDto> page = historyService.getUserHistoryList(currentUserId(), request);
+        return ApiResponse.<PagedResponseDto<MockTestHistoryItemDto>>builder().code(200)
+                .result(PagedResponseDto.from(page)).build();
     }
 
     private UUID currentUserId() {
