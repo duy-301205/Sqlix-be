@@ -3,6 +3,7 @@ package com.example.sqlix.controller;
 import com.example.sqlix.dto.request.UpdateUserProfileRequest;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.dto.response.CurrentUserResponse;
+import com.example.sqlix.entity.User;
 import com.example.sqlix.service.user.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class UserController {
     public ApiResponse<CurrentUserResponse> getCurrentUser(Authentication authentication) {
         return ApiResponse.<CurrentUserResponse>builder()
                 .code(200)
-                .result(userProfileService.getCurrentUser(authentication.getName()))
+                .result(userProfileService.getCurrentUser(currentUserEmail(authentication)))
                 .build();
     }
 
@@ -34,7 +35,12 @@ public class UserController {
         return ApiResponse.<CurrentUserResponse>builder()
                 .code(200)
                 .message("Cập nhật hồ sơ thành công.")
-                .result(userProfileService.updateCurrentUser(authentication.getName(), request))
+                .result(userProfileService.updateCurrentUser(currentUserEmail(authentication), request))
                 .build();
+    }
+
+    private String currentUserEmail(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        return principal instanceof User user ? user.getEmail() : authentication.getName();
     }
 }

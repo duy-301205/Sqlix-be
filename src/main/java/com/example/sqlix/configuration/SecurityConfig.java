@@ -38,6 +38,9 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
 
         http
+                // Handle CORS preflight requests before authentication filters.
+                .cors(cors -> {})
+
                 // REST API sử dụng JWT nên không cần CSRF
                 .csrf(csrf -> csrf.disable())
 

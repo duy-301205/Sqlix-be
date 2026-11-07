@@ -5,6 +5,7 @@ import com.example.sqlix.dto.response.LoginResponse;
 import com.example.sqlix.dto.response.RefreshTokenResponse;
 import com.example.sqlix.dto.response.RegisterResponse;
 import com.example.sqlix.dto.response.ApiResponse;
+import com.example.sqlix.entity.User;
 import com.example.sqlix.service.authentication.PasswordService;
 import com.example.sqlix.service.authentication.OAuthAuthenticationService;
 import com.example.sqlix.enums.VerifyResult;
@@ -135,7 +136,7 @@ public class AuthenticationController {
         }
         LogoutRequest logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken(refreshToken);
-        authenticationService.logout(logoutRequest, authentication.getName());
+        authenticationService.logout(logoutRequest, currentUserEmail(authentication));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code(200)
@@ -154,9 +155,7 @@ public class AuthenticationController {
             Authentication authentication
     ) {
 
-        authenticationService.logoutAll(
-                authentication.getName()
-        );
+        authenticationService.logoutAll(currentUserEmail(authentication));
 
         return ApiResponse.<Void>builder()
                 .code(200)
@@ -180,13 +179,15 @@ public class AuthenticationController {
     public ApiResponse<Void> resendVerification(
             Authentication authentication
     ) {
-        authenticationService.resendVerification(
-                authentication.getName()
-        );
+        authenticationService.resendVerification(currentUserEmail(authentication));
 
         return ApiResponse.<Void>builder()
                 .code(200)
                 .message("Verification OTP sent successfully")
                 .build();
+    }
+    private String currentUserEmail(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        return principal instanceof User user ? user.getEmail() : authentication.getName();
     }
 }
