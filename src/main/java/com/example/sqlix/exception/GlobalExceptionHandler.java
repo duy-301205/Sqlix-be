@@ -27,8 +27,8 @@ public class GlobalExceptionHandler {
         log.error("RuntimeException {} | {}", context, exception.getMessage(), exception);
 
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(ErrorCode.UNAUTHENTICATED.getCode());
-        apiResponse.setMessage(ErrorCode.UNAUTHENTICATED.getMessage());
+        apiResponse.setCode(ErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        apiResponse.setMessage(ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
     }

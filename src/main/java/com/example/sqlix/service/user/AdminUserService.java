@@ -13,6 +13,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,12 +28,31 @@ import java.util.UUID;
 public class AdminUserService {
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
+        @Transactional(readOnly = true)
     public Page<AdminUserDto> searchUsers(String search, UserSystemRole role, Boolean active, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        String query = search == null || search.isBlank() ? null : search.trim().toLowerCase(Locale.ROOT);
-        return userRepository.searchAdminUsers(query, role, active, pageable).map(this::toDto);
+        
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), pattern),
+                        cb.like(cb.lower(root.get("email")), pattern),
+                        cb.like(cb.lower(root.get("fullName")), pattern)
+                ));
+            }
+            if (role != null) {
+                predicates.add(cb.equal(root.get("systemRole"), role));
+            }
+            if (active != null) {
+                predicates.add(cb.equal(root.get("isActive"), active));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return userRepository.findAll(spec, pageable).map(this::toDto);
     }
 
     @Transactional
