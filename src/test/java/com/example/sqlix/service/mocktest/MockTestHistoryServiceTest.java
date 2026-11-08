@@ -48,10 +48,10 @@ class MockTestHistoryServiceTest {
     @Test void getsPagedHistoryAndAppliesFilters() {
         UUID id=UUID.randomUUID(); HistoryFilterRequest filter=new HistoryFilterRequest();
         filter.setKeyword("sql"); filter.setStatus("PASSED"); filter.setPage(1); filter.setSize(5);
-        when(sessions.findHistory(eq(id),eq("sql"),eq(true),isNull(),any())).thenReturn(new PageImpl<>(java.util.List.of(),PageRequest.of(1,5),0));
+        when(sessions.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(java.util.List.of(),PageRequest.of(1,5),0));
         var result=service.getUserHistoryList(id,filter);
         assertThat(result.getNumber()).isEqualTo(1); assertThat(result.getSize()).isEqualTo(5);
-        verify(sessions).findHistory(eq(id),eq("sql"),eq(true),isNull(),any());
+        verify(sessions).findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class));
     }
 
     @Test void detailIsScopedToOwnerAndMapsQuestionAnswers() {

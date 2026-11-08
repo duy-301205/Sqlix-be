@@ -3,6 +3,7 @@ package com.example.sqlix.repository;
 import com.example.sqlix.entity.TestSession;
 import com.example.sqlix.enums.TestSessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
@@ -15,7 +16,7 @@ import com.example.sqlix.enums.DifficultyLevel;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface TestSessionRepository extends JpaRepository<TestSession, UUID> {
+public interface TestSessionRepository extends JpaRepository<TestSession, UUID>, JpaSpecificationExecutor<TestSession> {
     long countByStatus(TestSessionStatus status);
 
 

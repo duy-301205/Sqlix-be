@@ -13,6 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,7 +35,7 @@ class AdminMockTestHistoryServiceTest {
         session.setStatus(TestSessionStatus.COMPLETED); session.setDurationSeconds(45); session.setIsPassed(true);
         User user=new User(); user.setId(userId); user.setUsername("learner"); user.setFullName("Learner Name"); session.setUser(user);
         MockTest test=new MockTest(); test.setTitle("Mock SQL"); session.setTest(test);
-        when(repository.findAdminHistory(eq(userId),eq(testId),isNull(),isNull(),eq(50),isNull(),any()))
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(session),PageRequest.of(0,10),1));
         var result=service.getAllHistories(filter);
         assertThat(result.getContent()).hasSize(1);

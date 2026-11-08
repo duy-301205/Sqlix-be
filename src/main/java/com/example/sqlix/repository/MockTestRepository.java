@@ -5,6 +5,7 @@ import com.example.sqlix.enums.DifficultyLevel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 import jakarta.persistence.LockModeType;
 
-public interface MockTestRepository extends JpaRepository<MockTest, UUID> {
+public interface MockTestRepository extends JpaRepository<MockTest, UUID>, JpaSpecificationExecutor<MockTest> {
     Optional<MockTest> findBySlug(String slug);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, UUID id);

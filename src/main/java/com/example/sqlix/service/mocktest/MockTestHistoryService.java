@@ -13,6 +13,9 @@ import com.example.sqlix.enums.TestSessionStatus;
 import com.example.sqlix.repository.TestSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
@@ -47,7 +50,24 @@ public class MockTestHistoryService {
             else if (!"ALL".equals(status) && !"COMPLETED".equals(status) && !"TIMEOUT".equals(status))
                 throw new IllegalArgumentException("Unsupported history status: " + filter.getStatus());
         }
-        return sessionRepository.findHistory(userId, keyword, passed, filter.getDifficulty(), pageable).map(this::toItem);
+        final Boolean finalPassed = passed;
+        Specification<TestSession> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("user").get("id"), userId));
+            predicates.add(root.get("status").in(TestSessionStatus.COMPLETED, TestSessionStatus.TIMEOUT));
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.like(cb.lower(root.get("test").get("title")), pattern));
+            }
+            if (finalPassed != null) {
+                predicates.add(cb.equal(root.get("isPassed"), finalPassed));
+            }
+            if (filter.getDifficulty() != null) {
+                predicates.add(cb.equal(root.get("test").get("difficulty"), filter.getDifficulty()));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return sessionRepository.findAll(spec, pageable).map(this::toItem);
     }
 
     public MockTestHistoryDetailDto getHistoryDetail(UUID userId, UUID sessionId) {
