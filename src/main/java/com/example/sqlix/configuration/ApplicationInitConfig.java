@@ -46,9 +46,19 @@ public class ApplicationInitConfig {
             String rawPassword
     ) {
 
-        // Kiểm tra admin đã tồn tại chưa
-        if (userRepository.existsBySystemRole(UserSystemRole.ADMIN)) {
-            log.info("Admin account already exists.");
+        // Reconcile an existing admin so older seeded accounts are usable too.
+        User existingAdmin = userRepository.findFirstBySystemRole(UserSystemRole.ADMIN).orElse(null);
+        if (existingAdmin != null) {
+            boolean changed = !Boolean.TRUE.equals(existingAdmin.getEmailVerified())
+                    || !Boolean.TRUE.equals(existingAdmin.getTermsAccepted())
+                    || !Boolean.TRUE.equals(existingAdmin.getIsActive());
+            existingAdmin.setEmailVerified(true);
+            existingAdmin.setTermsAccepted(true);
+            existingAdmin.setIsActive(true);
+            if (changed) {
+                userRepository.save(existingAdmin);
+            }
+            log.info("Admin account already exists; verification and access flags are enabled.");
             return;
         }
 
@@ -77,6 +87,7 @@ public class ApplicationInitConfig {
                 .fullName("System Administrator")
                 .occupation(UserOccupation.OTHER)
                 .systemRole(UserSystemRole.ADMIN)
+                .emailVerified(true)
                 .termsAccepted(true)
                 .isActive(true)
                 .build();

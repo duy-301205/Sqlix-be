@@ -36,6 +36,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsBySystemRole(UserSystemRole systemRole);
 
+    Optional<User> findFirstBySystemRole(UserSystemRole systemRole);
+
     Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
