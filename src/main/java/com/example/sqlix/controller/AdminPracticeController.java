@@ -3,6 +3,7 @@ package com.example.sqlix.controller;
 import com.example.sqlix.dto.request.DatabaseRequest;
 import com.example.sqlix.dto.request.ExerciseRequest;
 import com.example.sqlix.dto.response.AdminPracticeDatabaseDto;
+import com.example.sqlix.dto.response.AdminPracticeExerciseDto;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.entity.PracticeDatabase;
 import com.example.sqlix.entity.PracticeExercise;
@@ -68,6 +69,14 @@ public class AdminPracticeController {
     public ApiResponse<Boolean> deleteDatabase(@PathVariable UUID id) {
         adminPracticeService.deleteDatabase(id);
         return ApiResponse.<Boolean>builder().code(200).result(true).build();
+    }
+
+    @GetMapping("/databases/{dbId}/exercises")
+    public ApiResponse<List<AdminPracticeExerciseDto>> getExercisesByDatabaseId(@PathVariable UUID dbId) {
+        return ApiResponse.<List<AdminPracticeExerciseDto>>builder()
+                .code(200)
+                .result(adminPracticeService.getExercisesByDatabaseId(dbId))
+                .build();
     }
 
     @PostMapping("/databases/{dbId}/exercises")

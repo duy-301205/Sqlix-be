@@ -3,6 +3,7 @@ package com.example.sqlix.service.practice;
 import com.example.sqlix.dto.request.DatabaseRequest;
 import com.example.sqlix.dto.request.ExerciseRequest;
 import com.example.sqlix.dto.response.AdminPracticeDatabaseDto;
+import com.example.sqlix.dto.response.AdminPracticeExerciseDto;
 import com.example.sqlix.entity.PracticeDatabase;
 import com.example.sqlix.entity.PracticeExercise;
 import com.example.sqlix.exception.AppException;
@@ -52,7 +53,7 @@ public class AdminPracticeService {
 
     @Transactional
     public PracticeExercise createExercise(UUID databaseId, ExerciseRequest request) {
-        PracticeDatabase database = databaseRepository.findByIdForUpdate(databaseId)
+        PracticeDatabase database = databaseRepository.findById(databaseId)
                 .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
         PracticeExercise exercise = new PracticeExercise();
         exercise.setDatabase(database);
@@ -76,7 +77,7 @@ public class AdminPracticeService {
     public void deleteExercise(UUID exerciseId) {
         PracticeExercise exercise = exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new AppException(ErrorCode.EXERCISE_NOT_FOUND));
-        PracticeDatabase database = databaseRepository.findByIdForUpdate(exercise.getDatabase().getId())
+        PracticeDatabase database = databaseRepository.findById(exercise.getDatabase().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
         database.setExercisesCount(Math.max(0, valueOrZero(database.getExercisesCount()) - 1));
         exerciseRepository.delete(exercise);
@@ -136,6 +137,31 @@ public class AdminPracticeService {
                 db.getRating(),
                 db.getCreatedAt(),
                 db.getUpdatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminPracticeExerciseDto> getExercisesByDatabaseId(UUID databaseId) {
+        return exerciseRepository.findAllByDatabase_IdOrderBySortOrderAsc(databaseId).stream()
+                .map(this::toAdminPracticeExerciseDto)
+                .toList();
+    }
+
+    private AdminPracticeExerciseDto toAdminPracticeExerciseDto(PracticeExercise ex) {
+        return new AdminPracticeExerciseDto(
+                ex.getId(),
+                ex.getDatabase() != null ? ex.getDatabase().getId() : null,
+                ex.getTitle(),
+                ex.getDescription(),
+                ex.getDifficulty(),
+                ex.getTopics(),
+                valueOrZero(ex.getMaxScore()),
+                ex.getRequirements(),
+                ex.getExpectedColumns(),
+                ex.getSolutionQuery(),
+                valueOrZero(ex.getSortOrder()),
+                ex.getCreatedAt(),
+                ex.getUpdatedAt()
         );
     }
 

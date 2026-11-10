@@ -58,8 +58,16 @@ public class PracticeService {
 
     @Transactional(readOnly = true)
     public DatabaseDetailDto getDatabaseDetail(UUID userId, String slug) {
-        PracticeDatabase database = databaseRepository.findBySlug(slug)
-                .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
+        PracticeDatabase database;
+        try {
+            UUID id = UUID.fromString(slug);
+            database = databaseRepository.findById(id)
+                    .or(() -> databaseRepository.findBySlug(slug))
+                    .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
+        } catch (IllegalArgumentException e) {
+            database = databaseRepository.findBySlug(slug)
+                    .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
+        }
         List<PracticeExercise> exercises = exerciseRepository
                 .findAllByDatabase_IdOrderBySortOrderAsc(database.getId());
         Map<UUID, Boolean> passedByExerciseId = loadProgressByExercise(userId, exercises);
