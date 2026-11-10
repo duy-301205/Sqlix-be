@@ -2,6 +2,7 @@ package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.request.DatabaseRequest;
 import com.example.sqlix.dto.request.ExerciseRequest;
+import com.example.sqlix.dto.response.AdminPracticeDatabaseDto;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.entity.PracticeDatabase;
 import com.example.sqlix.entity.PracticeExercise;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +30,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminPracticeController {
     private final AdminPracticeService adminPracticeService;
+
+    @GetMapping("/databases")
+    public ApiResponse<List<AdminPracticeDatabaseDto>> getAllDatabases() {
+        return ApiResponse.<List<AdminPracticeDatabaseDto>>builder()
+                .code(200)
+                .result(adminPracticeService.getAllDatabases())
+                .build();
+    }
+
+    @GetMapping("/databases/{id}")
+    public ApiResponse<AdminPracticeDatabaseDto> getDatabaseById(@PathVariable UUID id) {
+        return ApiResponse.<AdminPracticeDatabaseDto>builder()
+                .code(200)
+                .result(adminPracticeService.getDatabaseById(id))
+                .build();
+    }
 
     @PostMapping("/databases")
     public ResponseEntity<ApiResponse<UUID>> createDatabase(@Valid @RequestBody DatabaseRequest request) {

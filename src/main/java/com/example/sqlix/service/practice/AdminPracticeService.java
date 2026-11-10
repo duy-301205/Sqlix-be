@@ -2,6 +2,7 @@ package com.example.sqlix.service.practice;
 
 import com.example.sqlix.dto.request.DatabaseRequest;
 import com.example.sqlix.dto.request.ExerciseRequest;
+import com.example.sqlix.dto.response.AdminPracticeDatabaseDto;
 import com.example.sqlix.entity.PracticeDatabase;
 import com.example.sqlix.entity.PracticeExercise;
 import com.example.sqlix.exception.AppException;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -103,6 +105,38 @@ public class AdminPracticeService {
         exercise.setExpectedColumns(request.expectedColumns());
         exercise.setSolutionQuery(request.solutionQuery());
         exercise.setSortOrder(request.sortOrder());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminPracticeDatabaseDto> getAllDatabases() {
+        return databaseRepository.findAll().stream()
+                .map(this::toAdminPracticeDatabaseDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminPracticeDatabaseDto getDatabaseById(UUID id) {
+        PracticeDatabase database = databaseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DATABASE_CATALOG_NOT_FOUND));
+        return toAdminPracticeDatabaseDto(database);
+    }
+
+    private AdminPracticeDatabaseDto toAdminPracticeDatabaseDto(PracticeDatabase db) {
+        return new AdminPracticeDatabaseDto(
+                db.getId(),
+                db.getName(),
+                db.getSlug(),
+                db.getDescription(),
+                db.getDifficulty(),
+                db.getIconUrl(),
+                db.getSchemaData(),
+                db.getInitSqlScript(),
+                valueOrZero(db.getTablesCount()),
+                valueOrZero(db.getExercisesCount()),
+                db.getRating(),
+                db.getCreatedAt(),
+                db.getUpdatedAt()
+        );
     }
 
     private int valueOrZero(Integer value) {
