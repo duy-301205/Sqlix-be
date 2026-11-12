@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -92,7 +93,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
-    // --- 5. Catch-all: Exception (safety net for anything not RuntimeException) ---
+    // --- 5. HttpMessageNotReadableException (400 for bad JSON / invalid enum / formatting) ---
+    @ExceptionHandler(value = HttpMessageNotReadableException.class)
+    ResponseEntity<ApiResponse> handlingHttpMessageNotReadableException(
+            HttpMessageNotReadableException exception, HttpServletRequest request) {
+        String context = buildContext(request);
+        log.warn("HttpMessageNotReadableException {} | {}", context, exception.getMessage());
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(ErrorCode.DATA_CONSTRAINT_VIOLATION.getCode());
+        String detail = exception.getMostSpecificCause() != null ? exception.getMostSpecificCause().getMessage() : exception.getMessage();
+        apiResponse.setMessage("Dữ liệu gửi lên không đúng định dạng hoặc thiếu thông tin hợp lệ: " + detail);
+
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    // --- 6. Catch-all: Exception (safety net for anything not RuntimeException) ---
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse> handlingException(Exception exception, HttpServletRequest request) {
         String context = buildContext(request);

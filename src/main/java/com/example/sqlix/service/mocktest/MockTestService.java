@@ -88,8 +88,16 @@ public class MockTestService {
 
     @Transactional(readOnly = true)
     public MockTestDetailDto getDetail(String slug) {
-        MockTest test = mockTestRepository.findBySlug(slug)
-                .orElseThrow(() -> new AppException(ErrorCode.MOCK_TEST_NOT_FOUND));
+        MockTest test = null;
+        try {
+            UUID id = UUID.fromString(slug);
+            test = mockTestRepository.findById(id).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if (test == null) {
+            test = mockTestRepository.findBySlug(slug)
+                    .orElseThrow(() -> new AppException(ErrorCode.MOCK_TEST_NOT_FOUND));
+        }
         return toDetailDto(test);
     }
 

@@ -2,6 +2,8 @@ package com.example.sqlix.service.mocktest;
 
 import com.example.sqlix.dto.request.MockTestQuestionRequest;
 import com.example.sqlix.dto.request.MockTestRequest;
+import com.example.sqlix.dto.response.AdminMockTestQuestionDto;
+import com.example.sqlix.dto.response.MockTestCatalogDto;
 import com.example.sqlix.entity.MockTest;
 import com.example.sqlix.entity.MockTestQuestion;
 import com.example.sqlix.entity.PracticeDatabase;
@@ -12,9 +14,11 @@ import com.example.sqlix.repository.MockTestQuestionRepository;
 import com.example.sqlix.repository.MockTestRepository;
 import com.example.sqlix.repository.PracticeDatabaseRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,6 +27,47 @@ public class AdminMockTestService {
     private final MockTestRepository mockTestRepository;
     private final MockTestQuestionRepository questionRepository;
     private final PracticeDatabaseRepository practiceDatabaseRepository;
+
+    @Transactional(readOnly = true)
+    public List<MockTestCatalogDto> getAllMockTests() {
+        return mockTestRepository.findAll(Sort.by("title").ascending())
+                .stream()
+                .map(test -> new MockTestCatalogDto(
+                        test.getId(),
+                        test.getTitle(),
+                        test.getSlug(),
+                        test.getDescription(),
+                        test.getDifficulty(),
+                        valueOrZero(test.getDurationMinutes()),
+                        valueOrZero(test.getTotalQuestions()),
+                        test.getCoverImageUrl(),
+                        valueOrZero(test.getTotalParticipants())
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminMockTestQuestionDto> getQuestionsByTestId(UUID testId) {
+        return questionRepository.findAllByTest_IdOrderBySortOrderAsc(testId)
+                .stream()
+                .map(q -> new AdminMockTestQuestionDto(
+                        q.getId(),
+                        q.getTest().getId(),
+                        q.getQuestionType(),
+                        q.getDatabase() != null ? q.getDatabase().getId() : null,
+                        q.getContent(),
+                        q.getPoints(),
+                        q.getSortOrder(),
+                        q.getRequirements(),
+                        q.getExpectedColumns(),
+                        q.getSolutionQuery(),
+                        q.getMaxRetries(),
+                        q.getMcOptions(),
+                        q.getMcCorrectOption(),
+                        q.getExplanation()
+                ))
+                .toList();
+    }
 
     @Transactional
     public MockTest createMockTest(MockTestRequest request) {
@@ -68,10 +113,11 @@ public class AdminMockTestService {
 
     @Transactional
     public MockTestQuestion updateQuestion(UUID questionId, MockTestQuestionRequest request) {
-        MockTestQuestion question = questionRepository.findForUpdateById(questionId)
+        MockTest question = null;
+        MockTestQuestion q = questionRepository.findForUpdateById(questionId)
                 .orElseThrow(() -> new AppException(ErrorCode.MOCK_TEST_QUESTION_NOT_FOUND));
-        applyQuestionRequest(question, request);
-        return questionRepository.save(question);
+        applyQuestionRequest(q, request);
+        return questionRepository.save(q);
     }
 
     @Transactional
