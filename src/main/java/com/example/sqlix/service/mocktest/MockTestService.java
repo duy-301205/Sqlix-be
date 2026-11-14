@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.Duration;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -262,8 +263,7 @@ public class MockTestService {
         }).toList();
         Instant end = session.getEndTime() == null ? Instant.now() : session.getEndTime();
         Duration elapsed = Duration.between(session.getStartTime(), end);
-        return new TestResultDto(session.getId(), valueOrZero(session.getTotalScore()), session.getStatus(),
-                elapsed.isNegative() ? 0 : elapsed.toSeconds(), results);
+        return new TestResultDto(session.getId(), valueOrZero(session.getTotalScore()), session.getTest().getMaxScore(), session.getTest().getPassingScore(), Boolean.TRUE.equals(session.getIsPassed()), session.getStatus(), elapsed.isNegative() ? 0 : elapsed.toSeconds(), results);
     }
 
     private TestSession getOwnedSession(UUID userId, UUID sessionId) {
@@ -313,7 +313,7 @@ public class MockTestService {
                 test.getId(), test.getTitle(), test.getSlug(), test.getDescription(), test.getDifficulty(),
                 valueOrZero(test.getDurationMinutes()), valueOrZero(test.getTotalQuestions()),
                 test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()),
-                test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                test.getPassingScore() == null ? BigDecimal.valueOf(7.0) : test.getPassingScore(),
                 test.getMaxScore() == null ? 10 : test.getMaxScore(),
                 test.getIsPublished() == null ? true : test.getIsPublished());
     }
@@ -323,7 +323,7 @@ public class MockTestService {
                 test.getId(), test.getTitle(), test.getSlug(), test.getDescription(), test.getDifficulty(),
                 valueOrZero(test.getDurationMinutes()), valueOrZero(test.getTotalQuestions()),
                 test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()),
-                test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                test.getPassingScore() == null ? BigDecimal.valueOf(7.0) : test.getPassingScore(),
                 test.getMaxScore() == null ? 10 : test.getMaxScore(),
                 test.getIsPublished() == null ? true : test.getIsPublished());
     }

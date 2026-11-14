@@ -2,6 +2,7 @@ package com.example.sqlix.dto.response;
 
 import com.example.sqlix.enums.DifficultyLevel;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record MockTestCatalogDto(
@@ -14,7 +15,7 @@ public record MockTestCatalogDto(
         int totalQuestions,
         String coverImageUrl,
         int totalParticipants,
-        Double passingScore,
+        BigDecimal passingScore,
         Integer maxScore,
         Boolean isPublished) {
 }

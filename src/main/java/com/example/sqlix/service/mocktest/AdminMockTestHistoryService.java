@@ -72,8 +72,19 @@ public class AdminMockTestHistoryService {
     }
 
     private AdminHistoryItemDto toDto(TestSession s) {
-        return new AdminHistoryItemDto(s.getId(), s.getUser().getId(), s.getUser().getUsername(), s.getUser().getFullName(),
-                s.getTest().getTitle(), s.getTotalScore() == null ? 0 : s.getTotalScore(), s.getEndTime(),
-                s.getDurationSeconds() == null ? 0 : s.getDurationSeconds(), s.getStatus(), Boolean.TRUE.equals(s.getIsPassed()));
+        var test = s.getTest();
+        return new AdminHistoryItemDto(
+                s.getId(),
+                s.getUser().getId(),
+                s.getUser().getUsername(),
+                s.getUser().getFullName(),
+                test.getTitle(),
+                s.getTotalScore() == null ? 0 : s.getTotalScore(),
+                s.getEndTime(),
+                s.getDurationSeconds() == null ? 0 : s.getDurationSeconds(),
+                s.getStatus(),
+                Boolean.TRUE.equals(s.getIsPassed()),
+                test.getMaxScore(),
+                test.getPassingScore());
     }
 }

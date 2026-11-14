@@ -49,7 +49,7 @@ class MockTestHistoryControllerTest {
         var question=new MockTestHistoryDetailDto.QuestionDetail(UUID.randomUUID(),"MULTIPLE_CHOICE","Prompt","A","A","Reason",1,1,true);
         when(service.getHistoryDetail(userId,sessionId)).thenReturn(new MockTestHistoryDetailDto(sessionId,UUID.randomUUID(),"Test",
                 com.example.sqlix.enums.DifficultyLevel.EASY,java.time.Instant.now(),30,100,true,
-                com.example.sqlix.enums.TestSessionStatus.COMPLETED,List.of(question)));
+                com.example.sqlix.enums.TestSessionStatus.COMPLETED, 100, java.math.BigDecimal.valueOf(70), List.of(question)));
         mvc.perform(get("/api/mock-tests/history/{sessionId}",sessionId)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.questions[0].explanation").value("Reason"));
     }

@@ -81,7 +81,7 @@ public class MockTestHistoryService {
                 .map(this::toQuestionDetail).toList();
         return new MockTestHistoryDetailDto(session.getId(), session.getTest().getId(), session.getTest().getTitle(),
                 session.getTest().getDifficulty(), session.getEndTime(), n(session.getDurationSeconds()),
-                n(session.getTotalScore()), Boolean.TRUE.equals(session.getIsPassed()), session.getStatus(), questions);
+                n(session.getTotalScore()), Boolean.TRUE.equals(session.getIsPassed()), session.getStatus(), session.getTest().getMaxScore(), session.getTest().getPassingScore(), questions);
     }
 
     private MockTestHistoryDetailDto.QuestionDetail toQuestionDetail(TestSessionAnswer answer) {
@@ -119,7 +119,7 @@ public class MockTestHistoryService {
     private MockTestHistoryItemDto toItem(TestSession s) {
         return new MockTestHistoryItemDto(s.getId(), s.getTest().getId(), s.getTest().getTitle(), s.getTest().getDifficulty(),
                 s.getEndTime(), n(s.getDurationSeconds()), n(s.getCorrectCount()), n(s.getTotalQuestions()),
-                n(s.getTotalScore()), Boolean.TRUE.equals(s.getIsPassed()), s.getStatus());
+                n(s.getTotalScore()), Boolean.TRUE.equals(s.getIsPassed()), s.getStatus(), s.getTest().getMaxScore(), s.getTest().getPassingScore());
     }
     private long n(Long value){return value == null ? 0 : value;}
     private int n(Integer value){return value == null ? 0 : value;}

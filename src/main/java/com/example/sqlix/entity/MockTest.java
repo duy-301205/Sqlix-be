@@ -17,6 +17,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -58,8 +59,8 @@ public class MockTest {
     @Column(name = "total_participants", nullable = false)
     private Integer totalParticipants = 0;
 
-    @Column(name = "passing_score", nullable = false)
-    private Double passingScore = 7.0;
+    @Column(name = "passing_score", nullable = false, precision = 5, scale = 2)
+    private BigDecimal passingScore = BigDecimal.valueOf(7.0);
 
     @Column(name = "max_score", nullable = false)
     private Integer maxScore = 10;

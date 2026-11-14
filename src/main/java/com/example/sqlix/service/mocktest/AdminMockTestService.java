@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,7 +43,7 @@ public class AdminMockTestService {
                         valueOrZero(test.getTotalQuestions()),
                         test.getCoverImageUrl(),
                         valueOrZero(test.getTotalParticipants()),
-                        test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                        test.getPassingScore() == null ? BigDecimal.valueOf(7.0) : test.getPassingScore(),
                         test.getMaxScore() == null ? 10 : test.getMaxScore(),
                         test.getIsPublished() == null ? true : test.getIsPublished()
                 ))
@@ -142,7 +143,7 @@ public class AdminMockTestService {
         test.setDifficulty(request.difficulty());
         test.setDurationMinutes(request.durationMinutes());
         test.setCoverImageUrl(request.coverImageUrl());
-        test.setPassingScore(request.passingScore() == null ? 7.0 : request.passingScore());
+        test.setPassingScore(request.passingScore() == null ? BigDecimal.valueOf(7.0) : request.passingScore());
         test.setMaxScore(request.maxScore() == null ? 10 : request.maxScore());
         test.setIsPublished(request.isPublished() == null ? true : request.isPublished());
     }
