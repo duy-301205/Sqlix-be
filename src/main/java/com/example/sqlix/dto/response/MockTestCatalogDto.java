@@ -13,5 +13,8 @@ public record MockTestCatalogDto(
         int durationMinutes,
         int totalQuestions,
         String coverImageUrl,
-        int totalParticipants) {
+        int totalParticipants,
+        Double passingScore,
+        Integer maxScore,
+        Boolean isPublished) {
 }

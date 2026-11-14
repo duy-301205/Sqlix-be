@@ -13,5 +13,18 @@ public record MockTestRequest(
         String description,
         @NotNull DifficultyLevel difficulty,
         @NotNull @Min(1) Integer durationMinutes,
-        String coverImageUrl) {
+        String coverImageUrl,
+        Double passingScore,
+        Integer maxScore,
+        Boolean isPublished) {
+
+    public MockTestRequest(
+            String title,
+            String slug,
+            String description,
+            DifficultyLevel difficulty,
+            Integer durationMinutes,
+            String coverImageUrl) {
+        this(title, slug, description, difficulty, durationMinutes, coverImageUrl, 7.0, 10, true);
+    }
 }

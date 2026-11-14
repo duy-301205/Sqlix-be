@@ -41,7 +41,10 @@ public class AdminMockTestService {
                         valueOrZero(test.getDurationMinutes()),
                         valueOrZero(test.getTotalQuestions()),
                         test.getCoverImageUrl(),
-                        valueOrZero(test.getTotalParticipants())
+                        valueOrZero(test.getTotalParticipants()),
+                        test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                        test.getMaxScore() == null ? 10 : test.getMaxScore(),
+                        test.getIsPublished() == null ? true : test.getIsPublished()
                 ))
                 .toList();
     }
@@ -139,6 +142,9 @@ public class AdminMockTestService {
         test.setDifficulty(request.difficulty());
         test.setDurationMinutes(request.durationMinutes());
         test.setCoverImageUrl(request.coverImageUrl());
+        test.setPassingScore(request.passingScore() == null ? 7.0 : request.passingScore());
+        test.setMaxScore(request.maxScore() == null ? 10 : request.maxScore());
+        test.setIsPublished(request.isPublished() == null ? true : request.isPublished());
     }
 
     private void applyQuestionRequest(MockTestQuestion question, MockTestQuestionRequest request) {

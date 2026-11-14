@@ -58,6 +58,15 @@ public class MockTest {
     @Column(name = "total_participants", nullable = false)
     private Integer totalParticipants = 0;
 
+    @Column(name = "passing_score", nullable = false)
+    private Double passingScore = 7.0;
+
+    @Column(name = "max_score", nullable = false)
+    private Integer maxScore = 10;
+
+    @Column(name = "is_published", nullable = false)
+    private Boolean isPublished = true;
+
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MockTestQuestion> questions = new ArrayList<>();
 }

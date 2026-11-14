@@ -69,6 +69,7 @@ public class MockTestService {
         
         Specification<MockTest> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isTrue(root.get("isPublished")));
             if (normalizedSearch != null) {
                 String pattern = "%" + normalizedSearch.toLowerCase(Locale.ROOT) + "%";
                 predicates.add(cb.or(
@@ -311,14 +312,20 @@ public class MockTestService {
         return new MockTestCatalogDto(
                 test.getId(), test.getTitle(), test.getSlug(), test.getDescription(), test.getDifficulty(),
                 valueOrZero(test.getDurationMinutes()), valueOrZero(test.getTotalQuestions()),
-                test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()));
+                test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()),
+                test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                test.getMaxScore() == null ? 10 : test.getMaxScore(),
+                test.getIsPublished() == null ? true : test.getIsPublished());
     }
 
     private MockTestDetailDto toDetailDto(MockTest test) {
         return new MockTestDetailDto(
                 test.getId(), test.getTitle(), test.getSlug(), test.getDescription(), test.getDifficulty(),
                 valueOrZero(test.getDurationMinutes()), valueOrZero(test.getTotalQuestions()),
-                test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()));
+                test.getCoverImageUrl(), valueOrZero(test.getTotalParticipants()),
+                test.getPassingScore() == null ? 7.0 : test.getPassingScore(),
+                test.getMaxScore() == null ? 10 : test.getMaxScore(),
+                test.getIsPublished() == null ? true : test.getIsPublished());
     }
 
     private int valueOrZero(Integer value) {
