@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminUserController {
     private final AdminUserService adminUserService;
+
+    @DeleteMapping("/{userId}")
+    public ApiResponse<Void> deleteUser(@PathVariable UUID userId) {
+        adminUserService.deleteUser(userId);
+        return ApiResponse.<Void>builder().code(200).message("Đã xóa tài khoản.").build();
+    }
 
     @GetMapping
     public ApiResponse<List<AdminUserDto>> searchUsers(

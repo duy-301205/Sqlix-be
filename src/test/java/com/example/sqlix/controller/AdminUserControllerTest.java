@@ -19,6 +19,12 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
+import com.example.sqlix.exception.AppException;
+import com.example.sqlix.exception.ErrorCode;
+import com.example.sqlix.exception.GlobalExceptionHandler;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,7 +38,7 @@ class AdminUserControllerTest {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
     @Test
@@ -65,5 +71,24 @@ class AdminUserControllerTest {
         mvc.perform(put("/api/admin/users/{userId}/role", id).contentType("application/json")
                         .content("{\"role\":\"ADMIN\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.result.role").value("ADMIN"));
+    }
+
+    @Test void deletePersistsBeforeReportingSuccess() throws Exception {
+        UUID id = UUID.randomUUID();
+        mvc.perform(delete("/api/admin/users/{userId}", id))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        verify(service).deleteUser(id);
+    }
+
+    @Test void deleteReturnsNotFoundForMissingUser() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new AppException(ErrorCode.USER_NOT_FOUND)).when(service).deleteUser(id);
+        mvc.perform(delete("/api/admin/users/{userId}", id)).andExpect(status().isNotFound());
+    }
+
+    @Test void deleteRejectsAdminAccount() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new AppException(ErrorCode.CANNOT_DELETE_ADMIN)).when(service).deleteUser(id);
+        mvc.perform(delete("/api/admin/users/{userId}", id)).andExpect(status().isForbidden());
     }
 }

@@ -69,6 +69,15 @@ public class AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    @Transactional
+    public void deleteUser(UUID userId) {
+        User user = findForUpdate(userId);
+        if (user.getSystemRole() == UserSystemRole.ADMIN) {
+            throw new AppException(ErrorCode.CANNOT_DELETE_ADMIN);
+        }
+        userRepository.delete(user);
+    }
+
     private User findForUpdate(UUID id) {
         return userRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
