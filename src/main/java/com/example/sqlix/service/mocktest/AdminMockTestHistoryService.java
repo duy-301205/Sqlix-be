@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Locale;
+import org.hibernate.query.criteria.JpaExpression;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +41,21 @@ public class AdminMockTestHistoryService {
 
         Specification<TestSession> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(root.get("status").in(TestSessionStatus.COMPLETED, TestSessionStatus.TIMEOUT));
+            if (filter.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            }
+            if (filter.getIsPassed() != null) {
+                predicates.add(cb.equal(root.get("isPassed"), filter.getIsPassed()));
+            }
+            if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+                String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT);
+                String pattern = "%" + keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("user").get("username")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("user").get("fullName")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("user").get("email")), pattern, '\\'),
+                        cb.like(cb.lower(((JpaExpression<UUID>) root.<UUID>get("id")).cast(String.class)), pattern, '\\')));
+            }
             if (filter.getUserId() != null) {
                 predicates.add(cb.equal(root.get("user").get("id"), filter.getUserId()));
             }
@@ -85,6 +101,7 @@ public class AdminMockTestHistoryService {
                 s.getStatus(),
                 Boolean.TRUE.equals(s.getIsPassed()),
                 test.getMaxScore(),
-                test.getPassingScore());
+                test.getPassingScore(),
+                s.getUser().getEmail());
     }
 }

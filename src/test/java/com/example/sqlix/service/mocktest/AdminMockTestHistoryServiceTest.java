@@ -7,6 +7,15 @@ import com.example.sqlix.entity.MockTest;
 import com.example.sqlix.enums.TestSessionStatus;
 import com.example.sqlix.repository.TestSessionRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
+import org.hibernate.query.criteria.JpaExpression;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -46,5 +55,77 @@ class AdminMockTestHistoryServiceTest {
         UUID id=UUID.randomUUID(); TestSession session=new TestSession();
         when(repository.findById(id)).thenReturn(Optional.of(session));
         service.adminDeleteSession(id); verify(repository).delete(session);
+    }
+    private void applyFilter(AdminHistoryFilterRequest filter, Root<TestSession> root, CriteriaBuilder cb) {
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenAnswer(invocation -> {
+            Specification<TestSession> spec = invocation.getArgument(0);
+            spec.toPredicate(root, mock(CriteriaQuery.class), cb);
+            return org.springframework.data.domain.Page.empty();
+        });
+        service.getAllHistories(filter);
+    }
+
+    @ParameterizedTest @EnumSource(TestSessionStatus.class)
+    void appliesEverySessionStatusWithoutRestrictingToFinishedSessions(TestSessionStatus status) {
+        Root<TestSession> root = mock(Root.class, RETURNS_DEEP_STUBS);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        AdminHistoryFilterRequest filter = new AdminHistoryFilterRequest();
+        filter.setStatus(status);
+        applyFilter(filter, root, cb);
+        verify(cb).equal(root.get("status"), status);
+        verify(root.get("status"), never()).in(any(Object[].class));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
+    void combinesResultWithStatusUserTestDateAndScore(boolean passed) {
+        Root<TestSession> root = mock(Root.class, RETURNS_DEEP_STUBS);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        AdminHistoryFilterRequest filter = new AdminHistoryFilterRequest();
+        filter.setIsPassed(passed); filter.setStatus(TestSessionStatus.COMPLETED);
+        filter.setUserId(UUID.randomUUID()); filter.setTestId(UUID.randomUUID());
+        filter.setFromDate(Instant.parse("2026-11-13T17:00:00Z"));
+        filter.setToDate(Instant.parse("2026-11-14T16:59:59.999Z"));
+        filter.setMinScore(0); filter.setMaxScore(60);
+        applyFilter(filter, root, cb);
+        verify(cb).equal(root.get("isPassed"), passed);
+        verify(cb).equal(root.get("status"), TestSessionStatus.COMPLETED);
+        verify(cb).equal(root.get("user").get("id"), filter.getUserId());
+        verify(cb).equal(root.get("test").get("id"), filter.getTestId());
+        verify(cb).greaterThanOrEqualTo(root.get("endTime"), filter.getFromDate());
+        verify(cb).lessThanOrEqualTo(root.get("endTime"), filter.getToDate());
+        verify(cb).greaterThanOrEqualTo(root.get("totalScore"), 0);
+        verify(cb).lessThanOrEqualTo(root.get("totalScore"), 60);
+        var predicates = org.mockito.ArgumentCaptor.forClass(Predicate[].class);
+        verify(cb).and(predicates.capture());
+        assertThat(predicates.getValue()).hasSize(8);
+    }
+
+    @Test void emptyFilterDoesNotAddHiddenConditions() {
+        Root<TestSession> root = mock(Root.class);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        applyFilter(new AdminHistoryFilterRequest(), root, cb);
+        verifyNoInteractions(root);
+        verify(cb).and(new Predicate[0]);
+    }
+
+    @Test void keywordSearchesNamesEmailAndPartialSessionIdAsLiteralText() {
+        Root<TestSession> root = mock(Root.class, RETURNS_DEEP_STUBS);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class, RETURNS_DEEP_STUBS);
+        root.get("user").get("username");
+        root.get("user").get("fullName");
+        root.get("user").get("email");
+        var id = mock(jakarta.persistence.criteria.Path.class, withSettings().extraInterfaces(JpaExpression.class));
+        when(root.get("id")).thenReturn(id);
+        JpaExpression<String> textId = mock(JpaExpression.class);
+        when(((JpaExpression<?>) id).cast(String.class)).thenReturn(textId);
+        AdminHistoryFilterRequest filter = new AdminHistoryFilterRequest();
+        filter.setKeyword("  Learner_%  ");
+        applyFilter(filter, root, cb);
+        String pattern = "%learner\\_\\%%";
+        verify(cb).like(cb.lower(root.get("user").get("username")), pattern, '\\');
+        verify(cb).like(cb.lower(root.get("user").get("fullName")), pattern, '\\');
+        verify(cb).like(cb.lower(root.get("user").get("email")), pattern, '\\');
+        verify(cb).like(cb.lower(textId), pattern, '\\');
+        verify(cb).or(any(Predicate.class), any(Predicate.class), any(Predicate.class), any(Predicate.class));
     }
 }

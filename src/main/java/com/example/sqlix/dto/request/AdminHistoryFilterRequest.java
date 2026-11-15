@@ -2,8 +2,15 @@ package com.example.sqlix.dto.request;
 
 import java.time.Instant;
 import java.util.UUID;
+import com.example.sqlix.enums.TestSessionStatus;
 
 public class AdminHistoryFilterRequest {
+    private String keyword;
+    private Boolean isPassed;
+    private TestSessionStatus status;
+    public String getKeyword(){return keyword;} public void setKeyword(String v){keyword=v;}
+    public Boolean getIsPassed(){return isPassed;} public void setIsPassed(Boolean v){isPassed=v;}
+    public TestSessionStatus getStatus(){return status;} public void setStatus(TestSessionStatus v){status=v;}
     private UUID userId, testId;
     private Instant fromDate, toDate;
     private Integer minScore, maxScore;

@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public record AdminHistoryItemDto(UUID sessionId, UUID userId, String username, String fullName,
         String testTitle, int score, Instant submittedAt, int durationSeconds,
-        TestSessionStatus status, boolean isPassed, Integer maxScore, BigDecimal passingScore) {}
+        TestSessionStatus status, boolean isPassed, Integer maxScore, BigDecimal passingScore,
+        String userEmail) {}

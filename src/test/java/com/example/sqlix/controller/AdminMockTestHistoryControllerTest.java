@@ -1,6 +1,10 @@
 package com.example.sqlix.controller;
 
 import com.example.sqlix.dto.response.ApiResponse;
+import com.example.sqlix.dto.request.AdminHistoryFilterRequest;
+import com.example.sqlix.enums.TestSessionStatus;
+import org.mockito.ArgumentCaptor;
+import static org.assertj.core.api.Assertions.assertThat;
 import com.example.sqlix.exception.AppException;
 import com.example.sqlix.exception.ErrorCode;
 import com.example.sqlix.exception.GlobalExceptionHandler;
@@ -44,6 +48,28 @@ class AdminMockTestHistoryControllerTest {
     @Test void adminDeleteReturns404ForMissingSession() throws Exception {
         UUID id=UUID.randomUUID(); doThrow(new AppException(ErrorCode.TEST_SESSION_NOT_FOUND)).when(service).adminDeleteSession(id);
         mvc.perform(delete("/api/admin/test-sessions/{sessionId}",id)).andExpect(status().isNotFound());
+    }
+    @Test void bindsIndependentResultStatusAndOtherFilters() throws Exception {
+        when(service.getAllHistories(any())).thenReturn(new PageImpl<>(List.of()));
+        String testId = UUID.randomUUID().toString();
+        mvc.perform(get("/api/admin/mock-tests/history")
+                .param("keyword", "learner@example.com").param("testId", testId)
+                .param("isPassed", "false").param("status", "TIMEOUT")
+                .param("fromDate", "2026-11-13T17:00:00Z")
+                .param("toDate", "2026-11-14T16:59:59.999Z")
+                .param("minScore", "0").param("maxScore", "60"))
+                .andExpect(status().isOk());
+        var captured = ArgumentCaptor.forClass(AdminHistoryFilterRequest.class);
+        verify(service).getAllHistories(captured.capture());
+        var filter = captured.getValue();
+        assertThat(filter.getIsPassed()).isFalse();
+        assertThat(filter.getStatus()).isEqualTo(TestSessionStatus.TIMEOUT);
+        assertThat(filter.getKeyword()).isEqualTo("learner@example.com");
+        assertThat(filter.getTestId()).isEqualTo(UUID.fromString(testId));
+        assertThat(filter.getMinScore()).isZero();
+        assertThat(filter.getMaxScore()).isEqualTo(60);
+        assertThat(filter.getFromDate()).isEqualTo(java.time.Instant.parse("2026-11-13T17:00:00Z"));
+        assertThat(filter.getToDate()).isEqualTo(java.time.Instant.parse("2026-11-14T16:59:59.999Z"));
     }
     @Test void nonAdminIsForbiddenByMethodSecurity() throws Exception {
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken("user", "n/a",
