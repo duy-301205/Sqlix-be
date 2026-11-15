@@ -19,6 +19,10 @@ import java.util.UUID;
 public interface TestSessionRepository extends JpaRepository<TestSession, UUID>, JpaSpecificationExecutor<TestSession> {
     long countByStatus(TestSessionStatus status);
 
+    @EntityGraph(attributePaths = "test")
+    Optional<TestSession> findFirstByUser_IdAndStatusInOrderByEndTimeDesc(
+            UUID userId, List<TestSessionStatus> statuses);
+
 
     @Query(value = "select total_tests_taken as \"totalTestsTaken\", average_score as \"averageScore\", highest_score as \"highestScore\", pass_rate_percentage as \"passRatePercentage\" from vw_user_mock_test_summary where user_id = :userId", nativeQuery = true)
     Optional<UserMockTestSummaryProjection> findHistorySummaryByUserId(@Param("userId") UUID userId);

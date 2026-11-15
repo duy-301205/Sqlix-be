@@ -55,12 +55,15 @@ class DashboardControllerTest {
     @Test
     void overviewReturnsOk() throws Exception {
         when(dashboardService.getOverview(userId)).thenReturn(
-                new DashboardOverviewResponse(600, 2, 5, 90.0, 120, 20));
+                new DashboardOverviewResponse(600, 2, 5, 90.0, 120, 20, 8, 24, null));
 
         mockMvc.perform(get("/api/dashboard/overview"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.result.totalStudyTimeSeconds").value(600));
+                .andExpect(jsonPath("$.result.totalStudyTimeSeconds").value(600))
+                .andExpect(jsonPath("$.result.totalLessons").value(8))
+                .andExpect(jsonPath("$.result.totalExercises").value(24))
+                .andExpect(jsonPath("$.result.averageScore").value(90));
 
         verify(dashboardService).getOverview(userId);
     }

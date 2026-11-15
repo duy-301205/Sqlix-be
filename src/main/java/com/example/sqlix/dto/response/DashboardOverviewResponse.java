@@ -6,5 +6,8 @@ public record DashboardOverviewResponse(
         long totalExercisesSolved,
         double averageScore,
         int todayStudyTimeSeconds,
-        int dailyTargetMinutes) {
+        int dailyTargetMinutes,
+        long totalLessons,
+        long totalExercises,
+        RecentMockTestResponse recentMockTest) {
 }

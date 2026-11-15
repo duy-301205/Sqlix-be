@@ -10,6 +10,16 @@ import com.example.sqlix.repository.UserDailyMetricRepository;
 import com.example.sqlix.repository.UserProfileRepository;
 import com.example.sqlix.repository.UserRecentActivityRepository;
 import com.example.sqlix.repository.UserTopicMasteryRepository;
+import com.example.sqlix.repository.LessonRepository;
+import com.example.sqlix.repository.PracticeExerciseRepository;
+import com.example.sqlix.repository.UserLessonProgressRepository;
+import com.example.sqlix.repository.UserExerciseProgressRepository;
+import com.example.sqlix.repository.UserExerciseSubmissionRepository;
+import com.example.sqlix.repository.TestSessionRepository;
+import com.example.sqlix.dto.response.RecentMockTestResponse;
+import com.example.sqlix.enums.LessonStatus;
+import com.example.sqlix.enums.TestSessionStatus;
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +39,13 @@ public class DashboardService {
     private final UserTopicMasteryRepository topicMasteryRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRecentActivityRepository recentActivityRepository;
+    private final LessonRepository lessonRepository;
+    private final PracticeExerciseRepository exerciseRepository;
+    private final UserLessonProgressRepository lessonProgressRepository;
+    private final UserExerciseProgressRepository exerciseProgressRepository;
+    private final UserExerciseSubmissionRepository submissionRepository;
+    private final TestSessionRepository sessionRepository;
+    private static final ZoneId ACTIVITY_ZONE = ZoneId.of("Asia/Bangkok");
 
     @Transactional(readOnly = true)
     public DashboardOverviewResponse getOverview(UUID userId) {
@@ -40,11 +57,28 @@ public class DashboardService {
 
         return new DashboardOverviewResponse(
                 metrics == null || metrics.getTotalStudyTimeSeconds() == null ? 0L : metrics.getTotalStudyTimeSeconds(),
-                metrics == null || metrics.getTotalLessonsCompleted() == null ? 0L : metrics.getTotalLessonsCompleted(),
-                metrics == null || metrics.getTotalExercisesSolved() == null ? 0L : metrics.getTotalExercisesSolved(),
-                metrics == null || metrics.getAverageScore() == null ? 0.0 : metrics.getAverageScore(),
+                lessonProgressRepository.countByUser_IdAndStatus(userId, LessonStatus.COMPLETED),
+                exerciseProgressRepository.countByUser_IdAndIsPassedTrue(userId),
+                submissionRepository.findAverageScoreOn100Scale(userId),
                 todayStudyTime,
-                dailyTargetMinutes);
+                dailyTargetMinutes,
+                lessonRepository.count(),
+                exerciseRepository.count(),
+                getRecentMockTest(userId));
+    }
+
+    private RecentMockTestResponse getRecentMockTest(UUID userId) {
+        return sessionRepository.findFirstByUser_IdAndStatusInOrderByEndTimeDesc(userId,
+                List.of(TestSessionStatus.COMPLETED, TestSessionStatus.TIMEOUT)).map(session -> {
+            var test = session.getTest();
+            int maxScore = test.getMaxScore() == null ? 0 : test.getMaxScore();
+            double score = maxScore <= 0 || session.getTotalScore() == null ? 0.0
+                    : Math.max(0, Math.min(100, session.getTotalScore() * 100.0 / maxScore));
+            return new RecentMockTestResponse(session.getId(), test.getTitle(), session.getEndTime(), score,
+                    session.getDurationSeconds() == null ? 0 : session.getDurationSeconds(),
+                    test.getTotalQuestions() == null ? 0 : test.getTotalQuestions(),
+                    Boolean.TRUE.equals(session.getIsPassed()));
+        }).orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -57,16 +91,15 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public List<DailyChartResponse> get30DayActivityChart(UUID userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ACTIVITY_ZONE);
         LocalDate startDate = today.minusDays(29);
-        Map<LocalDate, DailyChartResponse> metricsByDate = dailyMetricRepository
-                .findLast30Days(userId, startDate, today).stream()
+        Map<LocalDate, DailyChartResponse> metricsByDate = submissionRepository
+                .findDailyMetrics(userId, startDate.atStartOfDay(ACTIVITY_ZONE).toInstant(),
+                        today.plusDays(1).atStartOfDay(ACTIVITY_ZONE).toInstant()).stream()
                 .map(metric -> {
                     int exercisesSolved = metric.getExercisesSolved() == null ? 0 : metric.getExercisesSolved();
-                    double averageScore = exercisesSolved == 0 || metric.getTotalScore() == null
-                            ? 0.0
-                            : (double) metric.getTotalScore() / exercisesSolved;
-                    return new DailyChartResponse(metric.getId().getRecordDate(), exercisesSolved, averageScore);
+                    double averageScore = metric.getAverageScore() == null ? 0.0 : metric.getAverageScore();
+                    return new DailyChartResponse(metric.getDate(), exercisesSolved, averageScore);
                 })
                 .collect(Collectors.toMap(DailyChartResponse::date, Function.identity()));
 

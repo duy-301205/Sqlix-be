@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public interface UserExerciseProgressRepository extends JpaRepository<UserExerciseProgress, UserExerciseProgressId> {
     long countByIsPassedTrue();
+    long countByUser_IdAndIsPassedTrue(UUID userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select progress from UserExerciseProgress progress where progress.id = :id")

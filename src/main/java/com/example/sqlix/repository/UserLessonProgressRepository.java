@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface UserLessonProgressRepository extends JpaRepository<UserLessonProgress, UserLessonProgressId> {
+    long countByUser_IdAndStatus(UUID userId, com.example.sqlix.enums.LessonStatus status);
     @Query("""
             select progress from UserLessonProgress progress
             where progress.id.userId = :userId and progress.id.lessonId = :lessonId
