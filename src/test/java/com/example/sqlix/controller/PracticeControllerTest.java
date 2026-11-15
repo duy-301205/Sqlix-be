@@ -141,4 +141,15 @@ class PracticeControllerTest {
 
         verify(practiceService).submitCode(userId, exerciseId, "SELECT 1");
     }
+
+    @Test
+    void finishAcceptsEmptyAnswerAndRecordsEndOfAttempt() throws Exception {
+        UUID exerciseId = UUID.randomUUID();
+        when(practiceService.finishExercise(userId, exerciseId, ""))
+                .thenReturn(new SubmissionResultDto(SubmissionStatus.FAILED, 0, "Ended", null));
+        mockMvc.perform(post("/api/practice/exercises/{exerciseId}/finish", exerciseId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"query\":\"\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.result.score").value(0));
+        verify(practiceService).finishExercise(userId, exerciseId, "");
+    }
 }

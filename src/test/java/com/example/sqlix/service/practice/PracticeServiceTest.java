@@ -121,7 +121,7 @@ class PracticeServiceTest {
         when(userRepository.getReferenceById(userId)).thenReturn(user);
         when(progressRepository.findByIdForUpdate(progressId)).thenReturn(Optional.empty());
 
-        var result = practiceService.submitCode(userId, exerciseId, "SELECT id, price FROM products");
+        var result = practiceService.finishExercise(userId, exerciseId, "SELECT id, price FROM products");
 
         assertThat(result.status()).isEqualTo(SubmissionStatus.PASSED);
         assertThat(result.score()).isEqualTo(100);
@@ -159,6 +159,26 @@ class PracticeServiceTest {
         assertThat(result.feedback()).isEqualTo("Nội dung dữ liệu trả về không khớp.");
         verify(dashboardTrackingService, never()).logExerciseSolved(eq(userId),
                 org.mockito.ArgumentMatchers.any(), eq(exerciseId), eq("Find products"), eq(0));
+    }
+
+    @Test
+    void leavingEmptyPracticeRecordsZeroWithoutErasingPreviousPassedProgress() {
+        UUID userId = UUID.randomUUID();
+        PracticeExercise exercise = exercise(database(), "Empty attempt", 1);
+        UserExerciseProgressId id = new UserExerciseProgressId(userId, exercise.getId());
+        UserExerciseProgress progress = new UserExerciseProgress();
+        progress.setId(id); progress.setHighestScore(100); progress.setIsPassed(true);
+        when(exerciseRepository.findById(exercise.getId())).thenReturn(Optional.of(exercise));
+        when(progressRepository.findByIdForUpdate(id)).thenReturn(Optional.of(progress));
+        var result = practiceService.finishExercise(userId, exercise.getId(), "   ");
+        assertThat(result.status()).isEqualTo(SubmissionStatus.FAILED);
+        assertThat(result.score()).isZero();
+        verify(submissionRepository).saveAndFlush(org.mockito.ArgumentMatchers.argThat(submission ->
+                submission.getSubmittedQuery().isEmpty() && submission.getScore() == 0
+                        && submission.getStatus() == SubmissionStatus.FAILED));
+        assertThat(progress.getHighestScore()).isEqualTo(100);
+        assertThat(progress.getIsPassed()).isTrue();
+        org.mockito.Mockito.verifyNoInteractions(sqlExecutionService);
     }
 
     @Test

@@ -73,6 +73,14 @@ public class PracticeController {
                 .build();
     }
 
+    @PostMapping("/exercises/{exerciseId}/finish")
+    public ApiResponse<SubmissionResultDto> finishExercise(
+            @PathVariable UUID exerciseId, @RequestBody(required = false) QueryRequestDto request) {
+        return ApiResponse.<SubmissionResultDto>builder().code(200)
+                .result(practiceService.finishExercise(currentUserId(), exerciseId,
+                        request == null ? null : request.query())).build();
+    }
+
     private UUID currentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return ((User) authentication.getPrincipal()).getId();

@@ -160,6 +160,19 @@ public class PracticeService {
             }
         }
 
+        return saveSubmission(userId, exercise, query, status, score, feedback, actualResult);
+    }
+
+    @Transactional
+    public SubmissionResultDto finishExercise(UUID userId, UUID exerciseId, String query) {
+        if (query != null && !query.isBlank()) return submitCode(userId, exerciseId, query);
+        return saveSubmission(userId, findExercise(exerciseId), "", SubmissionStatus.FAILED, 0,
+                "Đã kết thúc lượt luyện tập mà chưa có câu trả lời.", new QueryResultDto(List.of(), List.of(), null));
+    }
+
+    private SubmissionResultDto saveSubmission(UUID userId, PracticeExercise exercise, String query,
+            SubmissionStatus status, int score, String feedback, QueryResultDto actualResult) {
+        UUID exerciseId = exercise.getId();
         UserExerciseSubmission submission = new UserExerciseSubmission();
         submission.setUser(userRepository.getReferenceById(userId));
         submission.setExercise(exercise);
