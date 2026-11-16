@@ -19,6 +19,11 @@ public class AdminDashboardService {
 
     @Transactional(readOnly = true)
     public AdminDashboardStatsDto getSystemStats() {
+        var finished = testSessionRepository.getFinishedTestStats();
+        long submittedCount = finished == null ? 0 : finished.getFinishedCount();
+        double averageScore = finished == null ? 0 : Math.round(finished.getAverageScore() * 100.0) / 100.0;
+        double passRate = submittedCount == 0 ? 0
+                : Math.round(finished.getPassedCount() * 10000.0 / submittedCount) / 100.0;
         return new AdminDashboardStatsDto(
                 userRepository.count(),
                 exerciseProgressRepository.countByIsPassedTrue(),
@@ -31,6 +36,6 @@ public class AdminDashboardService {
                                 session.getTest().getTitle(), session.getTotalScore(), session.getTest().getMaxScore(),
                                 Boolean.TRUE.equals(session.getIsPassed()),
                                 session.getDurationSeconds() == null ? 0 : session.getDurationSeconds(), session.getEndTime()))
-                        .toList());
+                        .toList(), submittedCount, averageScore, passRate);
     }
 }

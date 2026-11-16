@@ -19,6 +19,15 @@ import java.util.UUID;
 public interface TestSessionRepository extends JpaRepository<TestSession, UUID>, JpaSpecificationExecutor<TestSession> {
     long countByStatus(TestSessionStatus status);
 
+    @Query(value = """
+            select count(*) as "finishedCount",
+                   count(*) filter (where s.is_passed = true) as "passedCount",
+                   coalesce(avg(s.total_score * 100.0 / nullif(t.max_score, 0)), 0) as "averageScore"
+            from test_sessions s join mock_tests t on t.id = s.test_id
+            where s.status in ('COMPLETED', 'TIMEOUT')
+            """, nativeQuery = true)
+    FinishedTestStatsProjection getFinishedTestStats();
+
     @EntityGraph(attributePaths = {"user", "test"})
     List<TestSession> findTop10ByStatusInOrderByEndTimeDescIdDesc(List<TestSessionStatus> statuses);
 

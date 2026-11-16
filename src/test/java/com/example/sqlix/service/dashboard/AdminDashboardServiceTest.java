@@ -45,6 +45,31 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    void usesAllFinishedAttemptsForAverageAndActualPassedResults() {
+        var finished = org.mockito.Mockito.mock(com.example.sqlix.repository.FinishedTestStatsProjection.class);
+        when(sessionRepository.getFinishedTestStats()).thenReturn(finished);
+        when(finished.getFinishedCount()).thenReturn(3L);
+        when(finished.getPassedCount()).thenReturn(1L);
+        when(finished.getAverageScore()).thenReturn(66.6666666667);
+        var result = service.getSystemStats();
+        assertThat(result.totalTestSessions()).isEqualTo(3);
+        assertThat(result.averageTestScore()).isEqualTo(66.67);
+        assertThat(result.passRatePercent()).isEqualTo(33.33);
+    }
+
+    @Test
+    void noFinishedAttemptsHaveZeroAverageAndPassRate() {
+        var finished = org.mockito.Mockito.mock(com.example.sqlix.repository.FinishedTestStatsProjection.class);
+        when(sessionRepository.getFinishedTestStats()).thenReturn(finished);
+        when(finished.getFinishedCount()).thenReturn(0L);
+        when(finished.getAverageScore()).thenReturn(0.0);
+        var result = service.getSystemStats();
+        assertThat(result.totalTestSessions()).isZero();
+        assertThat(result.averageTestScore()).isZero();
+        assertThat(result.passRatePercent()).isZero();
+    }
+
+    @Test
     void aggregatesSystemCounters() {
         when(userRepository.count()).thenReturn(120L);
         when(progressRepository.countByIsPassedTrue()).thenReturn(840L);
