@@ -1,6 +1,7 @@
 package com.example.sqlix.service.dashboard;
 
 import com.example.sqlix.dto.response.AdminDashboardStatsDto;
+import com.example.sqlix.dto.response.RecentAdminTestSessionDto;
 import com.example.sqlix.enums.TestSessionStatus;
 import com.example.sqlix.repository.TestSessionRepository;
 import com.example.sqlix.repository.UserExerciseProgressRepository;
@@ -22,6 +23,14 @@ public class AdminDashboardService {
                 userRepository.count(),
                 exerciseProgressRepository.countByIsPassedTrue(),
                 testSessionRepository.count(),
-                testSessionRepository.countByStatus(TestSessionStatus.COMPLETED));
+                testSessionRepository.countByStatus(TestSessionStatus.COMPLETED),
+                testSessionRepository.findTop10ByStatusInOrderByEndTimeDescIdDesc(
+                        java.util.List.of(TestSessionStatus.COMPLETED, TestSessionStatus.TIMEOUT)).stream()
+                        .map(session -> new RecentAdminTestSessionDto(
+                                session.getId(), session.getUser().getFullName(), session.getUser().getEmail(),
+                                session.getTest().getTitle(), session.getTotalScore(), session.getTest().getMaxScore(),
+                                Boolean.TRUE.equals(session.getIsPassed()),
+                                session.getDurationSeconds() == null ? 0 : session.getDurationSeconds(), session.getEndTime()))
+                        .toList());
     }
 }

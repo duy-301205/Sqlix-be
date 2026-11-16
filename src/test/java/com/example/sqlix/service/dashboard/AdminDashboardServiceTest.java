@@ -21,6 +21,30 @@ class AdminDashboardServiceTest {
     @InjectMocks AdminDashboardService service;
 
     @Test
+    void includesRecentFinishedSessionsWithOriginalScoreScale() {
+        var user = com.example.sqlix.entity.User.builder().id(java.util.UUID.randomUUID())
+                .fullName("Student").email("student@example.com").build();
+        var test = new com.example.sqlix.entity.MockTest();
+        test.setTitle("SQL exam");
+        test.setMaxScore(100);
+        var session = new com.example.sqlix.entity.TestSession();
+        session.setId(java.util.UUID.randomUUID());
+        session.setUser(user); session.setTest(test);
+        session.setTotalScore(85); session.setIsPassed(true); session.setDurationSeconds(65);
+        session.setEndTime(java.time.Instant.parse("2026-11-16T12:00:00Z"));
+        when(sessionRepository.findTop10ByStatusInOrderByEndTimeDescIdDesc(
+                java.util.List.of(TestSessionStatus.COMPLETED, TestSessionStatus.TIMEOUT)))
+                .thenReturn(java.util.List.of(session));
+        var result = service.getSystemStats().recentTestSessions();
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().score()).isEqualTo(85);
+        assertThat(result.getFirst().maxScore()).isEqualTo(100);
+        assertThat(result.getFirst().userName()).isEqualTo("Student");
+        assertThat(result.getFirst().isPassed()).isTrue();
+        assertThat(result.getFirst().submittedAt()).isEqualTo(session.getEndTime());
+    }
+
+    @Test
     void aggregatesSystemCounters() {
         when(userRepository.count()).thenReturn(120L);
         when(progressRepository.countByIsPassedTrue()).thenReturn(840L);

@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class DashboardControllerTest {
     @Mock DashboardService dashboardService;
+    @Mock com.example.sqlix.service.dashboard.DashboardTrackingService trackingService;
     @InjectMocks DashboardController dashboardController;
 
     private MockMvc mockMvc;
@@ -50,6 +51,20 @@ class DashboardControllerTest {
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void studyTimeRecordsOnlyAuthenticatedUsersBoundedInterval() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/dashboard/study-time")
+                .contentType("application/json").content("{\"seconds\":30}"))
+                .andExpect(status().isOk());
+        verify(trackingService).logStudyTime(userId, 30);
+        for (int invalid : new int[]{0, -1, 61}) {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/dashboard/study-time")
+                    .contentType("application/json").content("{\"seconds\":" + invalid + "}"))
+                    .andExpect(status().isBadRequest());
+        }
+        org.mockito.Mockito.verifyNoMoreInteractions(trackingService);
     }
 
     @Test

@@ -19,6 +19,9 @@ import java.util.UUID;
 public interface TestSessionRepository extends JpaRepository<TestSession, UUID>, JpaSpecificationExecutor<TestSession> {
     long countByStatus(TestSessionStatus status);
 
+    @EntityGraph(attributePaths = {"user", "test"})
+    List<TestSession> findTop10ByStatusInOrderByEndTimeDescIdDesc(List<TestSessionStatus> statuses);
+
     @EntityGraph(attributePaths = "test")
     Optional<TestSession> findFirstByUser_IdAndStatusInOrderByEndTimeDesc(
             UUID userId, List<TestSessionStatus> statuses);

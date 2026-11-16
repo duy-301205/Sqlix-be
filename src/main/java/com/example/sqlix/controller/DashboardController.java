@@ -7,10 +7,15 @@ import com.example.sqlix.dto.response.RecentActivityResponse;
 import com.example.sqlix.dto.response.TopicMasteryResponse;
 import com.example.sqlix.entity.User;
 import com.example.sqlix.service.dashboard.DashboardService;
+import com.example.sqlix.service.dashboard.DashboardTrackingService;
+import com.example.sqlix.dto.request.StudyTimeRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +27,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DashboardController {
     private final DashboardService dashboardService;
+    private final DashboardTrackingService trackingService;
+
+    @PostMapping("/study-time")
+    public ApiResponse<Void> recordStudyTime(@Valid @RequestBody StudyTimeRequest request) {
+        trackingService.logStudyTime(currentUserId(), request.seconds());
+        return ApiResponse.<Void>builder().code(200).build();
+    }
 
     @GetMapping("/overview")
     public ApiResponse<DashboardOverviewResponse> getOverview() {
