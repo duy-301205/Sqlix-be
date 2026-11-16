@@ -17,6 +17,17 @@ import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
+    @Query(value = """
+            select u.id as "userId",
+                   (select count(*) from user_exercise_progress p
+                    where p.user_id = u.id and p.is_passed = true) as "totalExercisesSolved",
+                   (select count(*) from test_sessions s
+                    where s.user_id = u.id and s.status in ('COMPLETED', 'TIMEOUT')) as "testsTaken"
+            from users u where u.id in (:userIds)
+            """, nativeQuery = true)
+    java.util.List<UserSqlActivityProjection> findSqlActivityByUserIds(
+            @Param("userIds") java.util.Collection<UUID> userIds);
+
     @Query("""
             select u from User u
             where (:search is null or lower(u.username) like concat('%', :search, '%')
@@ -32,6 +43,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
             Pageable pageable);
 
     boolean existsByUsername(String username);
+    boolean existsByUsernameAndIdNot(String username, UUID id);
+    boolean existsByEmailAndIdNot(String email, UUID id);
 
     boolean existsByEmail(String email);
 

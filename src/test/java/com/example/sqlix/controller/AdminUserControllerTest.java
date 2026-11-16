@@ -42,6 +42,35 @@ class AdminUserControllerTest {
     }
 
     @Test
+    void createsAndEditsUsingPersistedAdminEndpoints() throws Exception {
+        UUID id = UUID.randomUUID();
+        var saved = new AdminUserDto(id, "newuser", "new@example.com", "New User",
+                UserSystemRole.USER, true, true, null, 2, 5);
+        when(service.createUser(any())).thenReturn(saved);
+        when(service.updateUser(eq(id), any())).thenReturn(saved);
+        String body = "{\"username\":\"newuser\",\"email\":\"new@example.com\",\"fullName\":\"New User\",\"password\":\"SamplePass123\",\"role\":\"USER\",\"active\":true}";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/users")
+                .contentType("application/json").content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.result.id").value(id.toString()));
+        mvc.perform(put("/api/admin/users/{userId}", id).contentType("application/json").content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.result.testsTaken").value(5));
+        verify(service).createUser(any());
+        verify(service).updateUser(eq(id), any());
+    }
+
+    @Test
+    void rejectsInvalidAdminInputs() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/users")
+                .contentType("application/json")
+                .content("{\"username\":\"newuser\",\"email\":\"bad-email\",\"password\":\"123\",\"fullName\":\"New\",\"role\":\"USER\",\"active\":true}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/admin/users/{id}/role", UUID.randomUUID()).contentType("application/json")
+                .content("{\"role\":\"INVALID\"}"))
+                .andExpect(status().isBadRequest());
+        org.mockito.Mockito.verifyNoInteractions(service);
+    }
+
+    @Test
     void listsUsersWithPaginationAndFilters() throws Exception {
         UUID id = UUID.randomUUID();
         AdminUserDto user = new AdminUserDto(id, "learner", "learner@example.com", "Learner",

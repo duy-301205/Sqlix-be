@@ -13,5 +13,11 @@ public record AdminUserDto(
         UserSystemRole role,
         boolean active,
         boolean emailVerified,
-        Instant createdAt) {
+        Instant createdAt,
+        long totalExercisesSolved,
+        long testsTaken) {
+    public AdminUserDto(UUID id, String username, String email, String fullName,
+            UserSystemRole role, boolean active, boolean emailVerified, Instant createdAt) {
+        this(id, username, email, fullName, role, active, emailVerified, createdAt, 0, 0);
+    }
 }

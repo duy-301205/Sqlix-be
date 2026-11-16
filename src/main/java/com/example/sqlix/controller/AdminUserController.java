@@ -3,6 +3,8 @@ package com.example.sqlix.controller;
 import com.example.sqlix.dto.Pagination;
 import com.example.sqlix.dto.request.AdminUserRoleRequest;
 import com.example.sqlix.dto.request.AdminUserStatusRequest;
+import com.example.sqlix.dto.request.AdminUserCreateRequest;
+import com.example.sqlix.dto.request.AdminUserUpdateRequest;
 import com.example.sqlix.dto.response.AdminUserDto;
 import com.example.sqlix.dto.response.ApiResponse;
 import com.example.sqlix.enums.UserSystemRole;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,6 +32,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminUserController {
     private final AdminUserService adminUserService;
+
+    @PostMapping
+    public ApiResponse<AdminUserDto> createUser(@Valid @RequestBody AdminUserCreateRequest request) {
+        return ApiResponse.<AdminUserDto>builder().code(200).result(adminUserService.createUser(request)).build();
+    }
+
+    @PutMapping("/{userId}")
+    public ApiResponse<AdminUserDto> updateUser(@PathVariable UUID userId,
+            @Valid @RequestBody AdminUserUpdateRequest request) {
+        return ApiResponse.<AdminUserDto>builder().code(200).result(adminUserService.updateUser(userId, request)).build();
+    }
 
     @DeleteMapping("/{userId}")
     public ApiResponse<Void> deleteUser(@PathVariable UUID userId) {
