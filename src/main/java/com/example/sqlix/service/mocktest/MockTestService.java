@@ -132,6 +132,26 @@ public class MockTestService {
     }
 
     @Transactional(noRollbackFor = AppException.class)
+    public QueryResultDto runQuery(UUID userId, UUID sessionId, UUID questionId, String query) {
+        TestSession session = getOwnedSession(userId, sessionId);
+        ensureInProgress(session);
+        if (isExpired(session, Instant.now())) {
+            closeAsTimeout(session);
+            throw new AppException(ErrorCode.EXAM_SESSION_EXPIRED);
+        }
+        MockTestQuestion question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new AppException(ErrorCode.MOCK_TEST_QUESTION_NOT_FOUND));
+        if (!question.getTest().getId().equals(session.getTest().getId())) {
+            throw new AppException(ErrorCode.MOCK_TEST_QUESTION_NOT_FOUND);
+        }
+        if (question.getQuestionType() != QuestionType.SQL_QUERY || question.getDatabase() == null) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+        // Running SQL previews data only: do not save an answer, grade it, or consume a retry.
+        return sqlExecutionService.executeSelect(question.getDatabase().getInitSqlScript(), query, MAX_RESULT_ROWS);
+    }
+
+    @Transactional(noRollbackFor = AppException.class)
     public AnswerResponseDto submitAnswer(UUID userId, UUID sessionId, UUID questionId, AnswerRequestDto request) {
         TestSession session = getOwnedSession(userId, sessionId);
         ensureInProgress(session);

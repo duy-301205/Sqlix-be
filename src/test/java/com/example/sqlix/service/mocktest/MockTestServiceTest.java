@@ -37,7 +37,66 @@ class MockTestServiceTest {
     @Mock MockTestQuestionRepository questionRepository;
     @Mock TestSessionRepository sessionRepository;
     @Mock UserRepository userRepository;
+    @Mock com.example.sqlix.repository.TestSessionAnswerRepository answerRepository;
+    @Mock com.example.sqlix.service.practice.SqlExecutionService sqlExecutionService;
     @InjectMocks MockTestService mockTestService;
+
+    @Test
+    void previewRunsAgainstQuestionDatabaseWithoutSavingOrGrading() {
+        UUID userId = UUID.randomUUID();
+        TestSession session = activeSession();
+        var database = new PracticeDatabase();
+        database.setInitSqlScript("CREATE TABLE books (book_id int); INSERT INTO books VALUES (1);");
+        var question = new MockTestQuestion();
+        question.setId(UUID.randomUUID()); question.setTest(session.getTest());
+        question.setQuestionType(QuestionType.SQL_QUERY); question.setDatabase(database);
+        var result = new com.example.sqlix.dto.response.QueryResultDto(List.of("book_id"), List.of(List.of(1)), null);
+        when(sessionRepository.findByIdAndUserId(session.getId(), userId)).thenReturn(Optional.of(session));
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        when(sqlExecutionService.executeSelect(database.getInitSqlScript(), "SELECT book_id FROM books", 10001)).thenReturn(result);
+        assertThat(mockTestService.runQuery(userId, session.getId(), question.getId(), "SELECT book_id FROM books")).isEqualTo(result);
+        org.mockito.Mockito.verifyNoInteractions(answerRepository);
+        org.mockito.Mockito.verify(sqlExecutionService).executeSelect(database.getInitSqlScript(), "SELECT book_id FROM books", 10001);
+    }
+
+    @Test
+    void previewRejectsQuestionsFromAnotherTestAndMultipleChoice() {
+        UUID userId = UUID.randomUUID();
+        TestSession session = activeSession();
+        var question = new MockTestQuestion(); question.setId(UUID.randomUUID()); question.setTest(mockTest());
+        when(sessionRepository.findByIdAndUserId(session.getId(), userId)).thenReturn(Optional.of(session));
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> mockTestService.runQuery(userId, session.getId(), question.getId(), "SELECT 1"))
+                .isInstanceOf(com.example.sqlix.exception.AppException.class);
+        question.setTest(session.getTest()); question.setQuestionType(QuestionType.MULTIPLE_CHOICE);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> mockTestService.runQuery(userId, session.getId(), question.getId(), "SELECT 1"))
+                .isInstanceOf(com.example.sqlix.exception.AppException.class);
+        org.mockito.Mockito.verifyNoInteractions(sqlExecutionService, answerRepository);
+    }
+
+    @Test
+    void previewRejectsOtherUsersAndExpiredOrFinishedSessions() {
+        UUID userId = UUID.randomUUID();
+        TestSession session = activeSession(); UUID questionId = UUID.randomUUID();
+        when(sessionRepository.findByIdAndUserId(session.getId(), userId)).thenReturn(Optional.empty());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> mockTestService.runQuery(userId, session.getId(), questionId, "SELECT 1"))
+                .isInstanceOf(com.example.sqlix.exception.AppException.class);
+        when(sessionRepository.findByIdAndUserId(session.getId(), userId)).thenReturn(Optional.of(session));
+        session.setStatus(TestSessionStatus.COMPLETED);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> mockTestService.runQuery(userId, session.getId(), questionId, "SELECT 1"))
+                .isInstanceOf(com.example.sqlix.exception.AppException.class);
+        session.setStatus(TestSessionStatus.IN_PROGRESS); session.setStartTime(Instant.now().minusSeconds(3600));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> mockTestService.runQuery(userId, session.getId(), questionId, "SELECT 1"))
+                .isInstanceOf(com.example.sqlix.exception.AppException.class);
+        assertThat(session.getStatus()).isEqualTo(TestSessionStatus.TIMEOUT);
+        org.mockito.Mockito.verifyNoInteractions(sqlExecutionService, answerRepository, questionRepository);
+    }
+
+    private TestSession activeSession() {
+        var session = new TestSession(); session.setId(UUID.randomUUID());
+        session.setTest(mockTest()); session.setStartTime(Instant.now());
+        return session;
+    }
 
     @Test
     void workspaceMapsSafeQuestionDataWithoutAnswerFields() {

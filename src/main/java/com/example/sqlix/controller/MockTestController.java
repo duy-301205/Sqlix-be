@@ -93,6 +93,15 @@ public class MockTestController {
                 .build();
     }
 
+    @PostMapping("/test-sessions/{sessionId}/questions/{questionId}/run")
+    public ApiResponse<com.example.sqlix.dto.response.QueryResultDto> runQuery(
+            @PathVariable UUID sessionId, @PathVariable UUID questionId,
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+            com.example.sqlix.dto.request.QueryRequestDto request) {
+        return ApiResponse.<com.example.sqlix.dto.response.QueryResultDto>builder().code(200)
+                .result(mockTestService.runQuery(currentUserId(), sessionId, questionId, request.query())).build();
+    }
+
     @PostMapping("/test-sessions/{sessionId}/submit")
     public ApiResponse<TestResultDto> submitTest(@PathVariable UUID sessionId) {
         return ApiResponse.<TestResultDto>builder()
